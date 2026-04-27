@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* font-family='Inter', sans-serif; */
+
+:root {
+  /* Backgrounds: Clean and spacious */
+  --bg-base:    #F8FAFC; /* Subtle gray-white background for depth */
+  --bg-card:    #FFFFFF; /* Pure white for content cards/panels */
+  --bg-hover:   #FFF7ED; /* Very light orange tint for hover states */
+
+  /* Borders: Subtle separation */
+  --border:     #E2E8F0; /* Soft gray for clean borders */
+  --border-mid: #CBD5E1; /* Slightly darker gray for emphasis */
+
+  /* Accents (Orange Theme): Formal and energetic */
+  --acid:       #EA580C; /* Primary brand orange (Strong, not overly neon) */
+  --acid-dim:   #F97316; /* Lighter orange for secondary buttons */
+  --acid-dark:  #C2410C; /* Darker orange for active/clicked states */
+
+  /* Typography: High contrast for readability */
+  --text-1:     #1e4c97; /* Main headings (Dark Slate, much better than black) */
+  --text-2:     #475569; /* Body text (Medium Slate) */
+  --text-3:     #94A3B8; /* Muted text/placeholders */
+
+  /* Status Colors: Semantic and dashboard-ready */
+  --pending:    #f59e0b; /* Amber (Warm warning) */
+  --cleaned:    #10B981; /* Emerald Green (Success/Resolved) */
+  --rejected:   #EF4444; /* Red (Error/Failed) */
+  --review:     #6366F1; /* Indigo (Neutral processing state) */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Helvetica';
+  background: var(--bg-base);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle noise texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--acid-dark); border-radius: 99px; }
+
+/* ── Shared components ─────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--acid-dim), transparent);
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px;
+  border-radius: 9px;
+  font-family: 'Georgia';
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary {
+  background: var(--acid);
+  color: #050D05;
+}
+.btn-primary:hover { background: #d8ff4a; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(200,241,53,0.25); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-mid);
+}
+.btn-outline:hover { background: var(--bg-hover); color: var(--text-1); border-color: var(--acid-dim); }
+
+.btn-danger {
+  background: rgba(239,68,68,0.12);
+  color: #FCA5A5;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.btn-danger:hover { background: rgba(239,68,68,0.22); }
+
+.btn-success {
+  background: rgba(74,222,128,0.12);
+  color: #86EFAC;
+  border: 1px solid rgba(74,222,128,0.3);
+}
+.btn-success:hover { background: rgba(74,222,128,0.22); }
+
+.input {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 16px;
+  color: var(--text-1);
+  font-family: 'Georgia';
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus { border-color: var(--acid-dim); box-shadow: 0 0 0 3px rgba(200,241,53,0.08); }
+.input::placeholder { color: var(--text-3); }
+textarea.input { resize: vertical; min-height: 96px; }
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  font-family: 'Georgia';
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  font-family: 'Georgia';
+}
+.badge-Pending  { background: rgba(251,191,36,0.12); color: var(--pending); border: 1px solid rgba(251,191,36,0.25); }
+.badge-Cleaned  { background: rgba(74,222,128,0.12); color: var(--cleaned); border: 1px solid rgba(74,222,128,0.25); }
+.badge-Rejected { background: rgba(248,113,113,0.12); color: var(--rejected); border: 1px solid rgba(248,113,113,0.25); }
+.badge-Review   { background: rgba(196,181,253,0.12); color: var(--review); border: 1px solid rgba(196,181,253,0.25); }
+
+/* Drop zone */
+.dropzone {
+  border: 2px dashed var(--border-mid);
+  border-radius: 14px;
+  padding: 52px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255,255,255,0.01);
+}
+.dropzone:hover, .dropzone.over {
+  border-color: var(--acid);
+  background: rgba(200,241,53,0.03);
+  box-shadow: inset 0 0 40px rgba(200,241,53,0.04);
+}
+
+/* Data table */
+.table { width: 100%; border-collapse: collapse; }
+.table thead tr { border-bottom: 1px solid var(--border); }
+.table th {
+  padding: 10px 16px; text-align: left;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-3);
+  font-family: 'Georgia';
+}
+.table tbody tr {
+  border-bottom: 1px solid rgba(200,241,53,0.04);
+  transition: background 0.15s;
+}
+.table tbody tr:hover { background: var(--bg-hover); }
+.table td { padding: 13px 16px; font-size: 13.5px; vertical-align: middle; }
+
+/* Stat number */
+.stat-num {
+  font-family: 'Georgia';
+  font-weight: 800;
+  font-size: 2.8rem;
+  line-height: 1;
+  color: var(--acid);
+}
+
+/* Heading */
+.heading {
+  font-family: 'Georgia';
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Section title */
+.section-title {
+  font-family: 'Georgia';
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+/* Severity colours */
+.sev-CRITICAL { color: #F87171; }
+.sev-HIGH     { color: #FB923C; }
+.sev-MEDIUM   { color: #FBBF24; }
+.sev-LOW      { color: #4ADE80; }
+
+/* Scan animation line */
+.scan-line {
+  position: absolute; width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--acid), transparent);
+  animation: scan 2.4s linear infinite;
+  opacity: 0.3; pointer-events: none;
+}
+
+/* Page layout */
+.page-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Glow divider */
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--acid-dim), transparent);
+  border: none;
+  margin: 0;
+}
+
+/* SSIM meter */
+.ssim-bar-track {
+  height: 8px; background: var(--bg-hover); border-radius: 99px; overflow: hidden;
+}
+.ssim-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
