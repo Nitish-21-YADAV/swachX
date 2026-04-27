@@ -1,6 +1,6 @@
-# ♻️ WasteGuard — AI Smart Waste Complaint Management System
+# ♻️ SwatchX — Smart Waste Complaint Management System
 
-A full-stack system for reporting, routing, verifying and managing waste complaints using YOLOv11, SSIM, and MongoDB Atlas.
+A full-stack system for Detecting, Classifying, Reporting, Routing, Verifying and Managing waste complaints.
 
 ---
 
@@ -148,7 +148,6 @@ npm run dev
 ### 🟢 Citizen (User)
 - Register / Login
 - Upload waste photo (EXIF GPS auto-extracted)
-- View YOLOv11 classification + environmental impact
 - Submit complaint → auto-routed to agency
 - View own complaints with before/after images + SSIM score
 
@@ -248,7 +247,6 @@ db.DataAgency.insertMany([
 
 ## Troubleshooting
 
-**AI service unavailable:** System falls back gracefully — complaints can still be submitted with "Unknown" waste type. The YOLO service is optional.
 
 **No GPS in image:** If the image has no EXIF GPS data, the system still accepts the complaint. Pincode can be inferred from GPS coordinates via reverse geocoding (Nominatim), but manual entry can be added to the frontend form.
 
