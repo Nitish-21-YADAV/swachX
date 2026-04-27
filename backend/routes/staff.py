@@ -54,12 +54,91 @@ def staff_stats():
         "rejected": complaints_col().count_documents({"assignedStaffEmail": staff_email, "status": "Rejected"}),
     }), 200
 
+# --------------old -----------------
+
+
+# @staff_bp.route("/complaints/<cid>/verify", methods=["POST"])
+# @jwt_required()
+#  def verify(cid):
+#     g = _staff_guard()
+#     if g: return g
+#     claims = get_jwt()
+
+#     if "file" not in request.files:
+#         return jsonify({"error": "After-image required"}), 400
+
+#     try:
+#         complaint = complaints_col().find_one({"_id": ObjectId(cid)})
+#     except:
+#         return jsonify({"error": "Invalid ID"}), 400
+#     if not complaint:
+#         return jsonify({"error": "Complaint not found"}), 404
+
+#     after_bytes = request.files["file"].read()
+#     remark      = request.form.get("remark", "")
+
+#     # Upload after-image to Cloudinary
+#     up_res    = cloudinary.uploader.upload(
+#         after_bytes, folder="wasteguard/after",
+#         resource_type="image", quality="auto", fetch_format="auto"
+#     )
+#     after_url = up_res["secure_url"]
+
+#     # Run SSIM comparison
+#     ssim_result = run_ssim(complaint["imageURL"], after_bytes)
+
+#     if "error" in ssim_result:
+#         return jsonify({"error": ssim_result["error"]}), 500
+
+#     now = datetime.datetime.utcnow()
+#     upd = {
+#         "afterImageURL": after_url,
+#         "ssimScore":     ssim_result["ssimScore"],
+#         "status":        ssim_result["status"],
+#         "staffRemark":   remark,
+#         "updatedAt":     now,
+#     }
+#     if ssim_result["status"] == "Cleaned":
+#         upd["resolvedAt"] = now
+
+#     complaints_col().update_one({"_id": ObjectId(cid)}, {"$set": upd})
+
+#     # Log to verificationDB
+#     verify_col().insert_one({
+#         "complaintId":   cid,
+#         "beforeImageURL": complaint["imageURL"],
+#         "afterImageURL":  after_url,
+#         "ssimScore":      ssim_result["ssimScore"],
+#         "orbRatio":       ssim_result.get("orbRatio"),
+#         "isCleaned":      ssim_result["isCleaned"],
+#         "needsReview":    ssim_result["needsReview"],
+#         "status":         ssim_result["status"],
+#         "verifiedBy":     claims.get("email"),
+#         "verifiedAt":     now
+#     })
+
+#     return jsonify({
+#         "message":      f"Verification complete — status: {ssim_result['status']}",
+#         "ssimScore":    ssim_result["ssimScore"],
+#         "isCleaned":    ssim_result["isCleaned"],
+#         "status":       ssim_result["status"],
+#         "afterImageURL": after_url
+#     }), 200
+
+
+# -------------------------------------------------------
+
+
+
 @staff_bp.route("/complaints/<cid>/verify", methods=["POST"])
 @jwt_required()
 def verify(cid):
     g = _staff_guard()
     if g: return g
     claims = get_jwt()
+    
+    # --- NEW: read method from query param (?method=clip) ---
+    method = request.args.get("method", "clip").lower()   # default to ssim
 
     if "file" not in request.files:
         return jsonify({"error": "After-image required"}), 400
@@ -81,43 +160,50 @@ def verify(cid):
     )
     after_url = up_res["secure_url"]
 
-    # Run SSIM comparison
-    ssim_result = run_ssim(complaint["imageURL"], after_bytes)
+    # Choose verification method
+    if method == "clip":
+        from services.ssim_service import run_clip_similarity
+        verify_result = run_clip_similarity(complaint["imageURL"], after_bytes)
+    else:
+        from services.ssim_service import run_ssim
+        verify_result = run_ssim(complaint["imageURL"], after_bytes)
 
-    if "error" in ssim_result:
-        return jsonify({"error": ssim_result["error"]}), 500
+    if "error" in verify_result:
+        return jsonify({"error": verify_result["error"]}), 500
 
     now = datetime.datetime.utcnow()
     upd = {
         "afterImageURL": after_url,
-        "ssimScore":     ssim_result["ssimScore"],
-        "status":        ssim_result["status"],
+        "ssimScore":     verify_result.get("ssimScore", verify_result.get("similarity")),
+        "status":        verify_result["status"],
         "staffRemark":   remark,
         "updatedAt":     now,
+        "verificationMethod": method   # optional: store which method was used
     }
-    if ssim_result["status"] == "Cleaned":
+    if verify_result["status"] == "Cleaned":
         upd["resolvedAt"] = now
 
     complaints_col().update_one({"_id": ObjectId(cid)}, {"$set": upd})
 
-    # Log to verificationDB
+    # Log to verificationDB (add method field)
     verify_col().insert_one({
         "complaintId":   cid,
         "beforeImageURL": complaint["imageURL"],
         "afterImageURL":  after_url,
-        "ssimScore":      ssim_result["ssimScore"],
-        "orbRatio":       ssim_result.get("orbRatio"),
-        "isCleaned":      ssim_result["isCleaned"],
-        "needsReview":    ssim_result["needsReview"],
-        "status":         ssim_result["status"],
+        "similarityScore": verify_result.get("ssimScore", verify_result.get("similarity")),
+        "method": method,
+        "isCleaned":      verify_result["isCleaned"],
+        "needsReview":    verify_result.get("needsReview", False),
+        "status":         verify_result["status"],
         "verifiedBy":     claims.get("email"),
         "verifiedAt":     now
     })
 
     return jsonify({
-        "message":      f"Verification complete — status: {ssim_result['status']}",
-        "ssimScore":    ssim_result["ssimScore"],
-        "isCleaned":    ssim_result["isCleaned"],
-        "status":       ssim_result["status"],
-        "afterImageURL": after_url
+        "message":      f"Verification complete via {method} — status: {verify_result['status']}",
+        "similarityScore": verify_result.get("ssimScore", verify_result.get("similarity")),
+        "isCleaned":    verify_result["isCleaned"],
+        "status":       verify_result["status"],
+        "afterImageURL": after_url,
+        "method":       method
     }), 200

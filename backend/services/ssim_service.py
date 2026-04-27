@@ -6,8 +6,95 @@ High SSIM score (images SIMILAR) → area still dirty.
 import cv2, numpy as np, requests
 from skimage.metrics import structural_similarity as ssim
 
-SSIM_CLEAN_THRESHOLD  = 0.80   # Below this → significant change → cleaned
-SSIM_REVIEW_THRESHOLD = 0.62   # Between 0.62–0.80 → needs review
+
+# -------------------------------------------------------------------------------------
+
+# --- CLIP zero-shot similarity (no training required) ---
+import torch
+import clip
+from PIL import Image
+import io
+import requests
+
+_CLIP_MODEL = None
+_CLIP_PREPROCESS = None
+
+def _get_clip_model():
+    global _CLIP_MODEL, _CLIP_PREPROCESS
+    if _CLIP_MODEL is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _CLIP_MODEL, _CLIP_PREPROCESS = clip.load("ViT-B/32", device=device)
+        print(f"[CLIP] Model loaded on {device}")
+    return _CLIP_MODEL, _CLIP_PREPROCESS
+
+def run_clip_similarity(before_url: str, after_bytes: bytes) -> dict:
+    """
+    Returns similarity score (0 to 1) where:
+        Higher score = images are more similar (cleaning NOT done)
+        Lower score = images are different (cleaning done)
+    Decision threshold will be opposite of SSIM.
+    """
+    try:
+        model, preprocess = _get_clip_model()
+        device = next(model.parameters()).device
+        
+        # Load before image from URL
+        resp = requests.get(before_url, timeout=10)
+        before_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+        # Load after image from bytes
+        after_img = Image.open(io.BytesIO(after_bytes)).convert("RGB")
+        
+        # Preprocess and encode
+        before_tensor = preprocess(before_img).unsqueeze(0).to(device)
+        after_tensor = preprocess(after_img).unsqueeze(0).to(device)
+        
+        with torch.no_grad():
+            before_feat = model.encode_image(before_tensor)
+            after_feat = model.encode_image(after_tensor)
+            # Normalize
+            before_feat = before_feat / before_feat.norm(dim=-1, keepdim=True)
+            after_feat = after_feat / after_feat.norm(dim=-1, keepdim=True)
+            # Cosine similarity between 0 and 1
+            similarity = (before_feat @ after_feat.T).item()
+            similarity = (similarity + 1) / 2   # scale from [-1,1] to [0,1]
+        
+        # Similarity interpretation:
+        # High similarity (e.g., >0.7) → images look alike → NOT cleaned
+        # Low similarity (<0.4) → images different → CLEANED
+        # You can tune thresholds after testing a few images
+        if similarity > 0.65:
+            status = "Cleaned"
+            is_cleaned = True
+            needs_review = False
+
+        elif 0.45 <= similarity <= 0.65:
+            status = "Pending Review"
+            is_cleaned = False
+            needs_review = True
+
+        else:
+            status = "Rejected"
+            is_cleaned = False
+            needs_review = False
+        
+        return {
+            "similarity": round(similarity, 4),
+            "status": status,
+            "isCleaned": is_cleaned,
+            "needsReview": needs_review,
+            "method": "CLIP"
+        }
+    except Exception as e:
+        print(f"[CLIP] Error: {e}")
+        return {"error": str(e), "status": "Error"}
+
+
+
+
+# -----------------------------------------------------------------------------------
+
+SSIM_CLEAN_THRESHOLD  = 0.68   # Below this → significant change → cleaned
+SSIM_REVIEW_THRESHOLD = 0.52   # Between 0.62–0.80 → needs review
 
 def _fetch_image(url: str):
     try:
