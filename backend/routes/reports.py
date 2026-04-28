@@ -86,7 +86,7 @@ def export_excel():
     ws.row_dimensions[2].height = 20
 
     headers = ["#", "Complaint No.", "User Email", "Waste Type",
-               "Environmental Impact", "Agency Email", "Pincode",
+               "Environmental Impact", "Detected Materials", "Agency Email", "Pincode",
                "Status", "Timestamp", "Resolved At"]
 
     for col, h in enumerate(headers, 1):
@@ -104,7 +104,8 @@ def export_excel():
             doc.get("complaintNumber", ""),
             doc.get("userEmail", ""),
             doc.get("wasteType", ""),
-            (doc.get("environmentalImpact", "") or "")[:80],
+            doc.get("environmentalImpact"),
+            doc.get("materialsList", ""),
             doc.get("agencyEmail", ""),
             doc.get("pincode", ""),
             doc.get("status", ""),
@@ -174,7 +175,7 @@ def export_pdf():
         Spacer(1, 0.3*cm)
     ]
 
-    headers = [["#", "Complaint No.", "User Email", "Waste Type",
+    headers = [["#", "Complaint No.", "User Email", "Waste Type", "Detected Materials",
                  "Env. Impact", "Agency", "Pincode", "Status", "Timestamp"]]
     table_data = headers[:]
     for i, doc_item in enumerate(docs, 1):
@@ -185,7 +186,8 @@ def export_pdf():
             doc_item.get("complaintNumber",""),
             doc_item.get("userEmail",""),
             doc_item.get("wasteType",""),
-            Paragraph(impact_txt, wrap_style),
+            Paragraph(doc_item.get("environmentalImpact","")[:200], wrap_style),
+            Paragraph(doc_item.get("materialsList",""), wrap_style),
             doc_item.get("agencyEmail",""),
             doc_item.get("pincode",""),
             status,

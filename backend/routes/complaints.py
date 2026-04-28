@@ -12,6 +12,22 @@ from services.energy_model import energy_model
 
 from database import users_col
 
+def _build_materials_list(yolo_data):
+    """Convert plastics/others arrays into a readable string."""
+    items = []
+    for p in yolo_data.get("plastics", []):
+        if p.get("count", 0) > 0:
+            items.append(f"{p['type']}:{p['count']}")
+    for o in yolo_data.get("others", []):
+        if o.get("count", 0) > 0:
+            items.append(f"{o['type']}:{o['count']}")
+    if not items:
+        return "No items detected"
+    return ", ".join(items)
+
+
+
+
 from services.email_service import (
     send_complaint_confirmation,
     send_agency_notification,
@@ -257,14 +273,25 @@ def submit():
         print(f"[Submit] Resolved agency from pincode: {agency_email}")  
 
     # Parse YOLO/LLM results
+    # try:    yolo = json.loads(yolo_str)
+    # except: yolo = {}
+
+    # waste_type   = yolo.get("wasteType", "Unknown")    
+    # env_impact   = yolo.get("environmentalImpact", "")
+    # degradable   = yolo.get("degradable", False)
+    # recyclable   = yolo.get("recyclable", "Unknown")
+    # total_weight = yolo.get("total_weight_kg", 0.5)   # agar LLM se nahi aaya toh 0.5 kg assume
+
+        # Parse YOLO/LLM results
     try:    yolo = json.loads(yolo_str)
     except: yolo = {}
 
-    waste_type   = yolo.get("wasteType", "Unknown")    
-    env_impact   = yolo.get("environmentalImpact", "")
-    degradable   = yolo.get("degradable", False)
-    recyclable   = yolo.get("recyclable", "Unknown")
-    total_weight = yolo.get("total_weight_kg", 0.5)   # agar LLM se nahi aaya toh 0.5 kg assume
+    waste_type = yolo.get("wasteType", "Mixed Waste")
+    env_impact = yolo.get("environmentalImpact", "Waste causes environmental damage.")
+    degradable = False   # you can compute from yolo if needed
+    recyclable = "Unknown"
+    total_weight = yolo.get("totalWeightKg", 0.5)
+    materials_list = _build_materials_list(yolo)   # <-- new
 
     # ✅ ENERGY CALCULATION – YAHAN PEHLE CALL KARO  
     energy_kwh, co2_saved = energy_model.predict(waste_type, total_weight)
@@ -284,6 +311,7 @@ def submit():
         "description":        description,
         "wasteType":          waste_type,
         "environmentalImpact": env_impact,
+        "materialsList": materials_list,
         "degradable":         degradable,
         "recyclable":         recyclable,
         "yoloResults":        yolo,
