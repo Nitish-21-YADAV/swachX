@@ -48,22 +48,101 @@ export default function NewComplaint() {
     e.preventDefault(); setDragOver(false)
     handleFile(e.dataTransfer.files[0])
   }
+// Helper to resize image before upload
+const resizeImageForUpload = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+  const resizeImage = (file, maxWidth = 1024, maxHeight = 1024) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
-  const runAI = async () => {
-    if (!file) return
-    setAiLoading(true)
-    try {
-      const fd = new FormData(); fd.append('file', file)
-      const { data } = await aiApi.post('/detect', fd)
-      setAiResult(data)
-      setStep(1)
-    } catch (e) {
-      toast.error('AI service unavailable — you can still submit')
-      setAiResult({ wasteType: 'Unknown', degradable: false, environmentalImpact: 'AI unavailable', recyclable: 'N/A', severity: 'MEDIUM' })
-      setStep(1)
-    } finally { setAiLoading(false) }
+const runAI = async () => {
+  if (!file) return
+  setAiLoading(true)
+  try {
+    const fd = new FormData()
+    const resizedFile = await resizeImage(file);
+    fd.append('file', resizedFile);
+    const { data } = await aiApi.post('/detect', fd)
+    console.log("AI Response received:", data)
+    console.log("Has annotated_image_base64?", !!data.annotated_image_base64)
+    setAiResult(data)
+    setStep(1)
+  } catch (e) {
+    console.error("AI error:", e)
+    toast.error('AI service unavailable — you can still submit')
+    setAiResult({
+      wasteType: 'Unknown',
+      environmentalImpact: 'AI unavailable',
+      totalItems: 0,
+      plastics: [],
+      others: [],
+    })
+    setStep(1)
+  } finally {
+    setAiLoading(false)
   }
-
+}
   const fetchAgencyByPincode = async (pincode) => {
     if (!pincode || pincode.length !== 6) return
     setFetchingAgency(true)
@@ -112,13 +191,28 @@ export default function NewComplaint() {
 
     setSubmitting(true)
     try {
-      const fd = new FormData()
+      const resizedFile = await resizeImageForUpload(file, 1200, 1200, 0.8);
+  const fd = new FormData();
+  fd.append('file', resizedFile);
       fd.append('file', file)
       fd.append('description', desc)
       fd.append('pincode', finalPincode)
       fd.append('latitude', meta?.latitude || '')
       fd.append('longitude', meta?.longitude || '')
-      fd.append('yoloResults', JSON.stringify(aiResult || {}))
+      // ✅ AI Result se heavy base64 image strip karo backend bhejney se pehle
+      // ✅ AI Result se image nikal kar alag variable mein save karo
+      const aiResultToSave = { ...aiResult }
+      const annotatedBase64 = aiResultToSave.annotated_image_base64 
+      delete aiResultToSave.annotated_image_base64 // JSON ko halka rakho
+      
+      fd.append('yoloResults', JSON.stringify(aiResultToSave))
+      
+      // ✅ Image ko alag form-field ki tarah bhejo!
+      if (annotatedBase64) {
+        fd.append('annotatedImageBase64', annotatedBase64)
+      }
+      
+      fd.append('yoloResults', JSON.stringify(aiResultToSave))
       fd.append('agencyEmail', finalAgencyEmail)
       if (meta?.streetAddr) fd.append('streetAddress', meta.streetAddr)
       if (meta?.landmark) fd.append('landmark', meta.landmark)
@@ -406,6 +500,17 @@ export default function NewComplaint() {
                   </span>
                 </div>
               </div>
+              // Inside the AI results card (step === 1), after showing wasteType, add:
+              {aiResult.annotated_image_base64 && (
+                <div className="mt-4">
+                  <div className="label mb-2">Detection Map (Bounding Boxes)</div>
+                  <img
+                    src={`data:image/png;base64,${aiResult.annotated_image_base64}`}
+                    alt="Annotated waste"
+                    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)' }}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {[

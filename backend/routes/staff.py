@@ -144,7 +144,7 @@ def verify(cid):
         return jsonify({"error": "After-image required"}), 400
 
     try:
-        complaint = complaints_col().find_one({"_id": ObjectId(cid)})
+        complaint = complaints_col().find_one({"_id": ObjectId(cid)})    
     except:
         return jsonify({"error": "Invalid ID"}), 400
     if not complaint:

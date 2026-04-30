@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api', timeout: 30000 })
+const api = axios.create({ baseURL: '/api', timeout: 120000 })
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('wg_token')
@@ -23,4 +23,4 @@ api.interceptors.response.use(
 export default api
 
 // AI Service (FastAPI)
-export const aiApi = axios.create({ baseURL: '/ai', timeout: 60000 })
+export const aiApi = axios.create({ baseURL: '/ai', timeout: 120000 })

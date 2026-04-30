@@ -28,8 +28,8 @@ async def detect_waste(file: UploadFile = File(...)):
 
 
 
-from routes.detection import router
-app.include_router(router, prefix="/api/ai")
+# from routes.detection import router
+# app.include_router(router, prefix="/api/ai")
 
 
 

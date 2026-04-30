@@ -17,7 +17,7 @@ import io
 import requests
 
 _CLIP_MODEL = None
-_CLIP_PREPROCESS = None
+_CLIP_PREPROCESS = None    
 
 def _get_clip_model():
     global _CLIP_MODEL, _CLIP_PREPROCESS

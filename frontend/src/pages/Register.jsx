@@ -23,10 +23,10 @@ export default function RegisterPage() {
       const { data } = await api.post('/auth/register', {
         name:form.name, email:form.email, phone:form.phone, password:form.password
       })
-      login(data.user, data.accessToken)
+      login(data.user, data.accessToken) 
       toast.success('Account created! Welcome to WasteGuard.')
       nav('/dashboard')
-    } catch(err) { toast.error(errMsg(err))
+    } catch(err) { toast.error(errMsg(err))   
     } finally { setBusy(false) }
   }
 

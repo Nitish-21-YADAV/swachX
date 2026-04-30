@@ -146,18 +146,18 @@ def create_staff():
     return jsonify({"message": f"Staff '{name}' created with pincode range {pincode_start}-{pincode_end}"}), 201
 
 # backend/routes/auth.py
-
+   
 @auth_bp.route("/staff/list", methods=["GET"])
 @jwt_required()
 def list_staff():
-    if get_jwt().get("role") != "admin":
+    if get_jwt().get("role") != "admin":  
         return jsonify({"error": "Admin only"}), 403
     docs = list(users_col().find({"role": "staff"}, {"password": 0}))
     for d in docs:
         d["_id"] = str(d["_id"])
         # Ensure pincode fields are present (for old staff, set defaults)
         if "assignedPincodeStart" not in d:
-            d["assignedPincodeStart"] = ""
+            d["assignedPincodeStart"] = ""     
         if "assignedPincodeEnd" not in d:
             d["assignedPincodeEnd"] = ""
     return jsonify(docs), 200

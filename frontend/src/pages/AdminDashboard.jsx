@@ -22,20 +22,30 @@ function StatCard({ label, value, color }) {
   )
 }
 
-function ImageModal({ url, onClose }) {
+function ImageModal({ url, annotatedUrl, onClose }) {
   if (!url) return null
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
-    }}
-      onClick={onClose}>
-      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+    }} onClick={onClose}>
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', gap: '20px' }} onClick={e => e.stopPropagation()}>
         <button onClick={onClose} style={{
           position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none',
           cursor: 'pointer', color: 'white'
         }}><X size={24} /></button>
-        <img src={url} alt="Waste" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
+        
+        <div style={{ flex: 1 }}>
+          <div className="label" style={{ color: 'white', marginBottom: '8px' }}>Original Image</div>
+          <img src={url} alt="Original" style={{ maxWidth: '45vw', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
+        </div>
+        
+        {annotatedUrl && (
+          <div style={{ flex: 1 }}>
+            <div className="label" style={{ color: 'white', marginBottom: '8px' }}>AI Detection Map</div>
+            <img src={annotatedUrl} alt="Annotated" style={{ maxWidth: '45vw', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -164,7 +174,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
       <Navbar />
-      {imgModal && <ImageModal url={imgModal} onClose={() => setImgModal(null)} />}
+      {imgModal && <ImageModal url={imgModal.url} annotatedUrl={imgModal.annotatedUrl} onClose={() => setImgModal(null)} />}
       {statusModal && <StatusModal complaint={statusModal} onClose={() => setStatusModal(null)} onUpdate={fetchData} />}
 
       <div className="page-wrapper" style={{ paddingTop: '36px', paddingBottom: '60px' }}>
@@ -230,48 +240,59 @@ export default function AdminDashboard() {
               <table className="table">
                 <thead>
                   <tr>
-                    {['Image', 'Complaint No.', 'User', 'Waste Type', 'Agency', 'Pincode', 'Status', 'Timestamp', 'Energy', 'SSIM', 'Actions'].map(h => (
+                    {['Images', 'Complaint No.', 'User', 'Waste Type', 'Agency', 'Pincode', 'Status', 'Timestamp', 'Energy', 'SSIM', 'Actions'].map(h => (
                       <th key={h}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>Loading…</td></tr>
+                    <tr><td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>Loading…</td></tr>
                   ) : complaints.length === 0 ? (
-                    <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>No complaints found</td></tr>
+                    <tr><td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>No complaints found</td></tr>
                   ) : complaints.map(c => (
                     <tr key={c._id}>
+                      {/* ✅ Updated Side-by-Side Images Column */}
                       <td>
-                        {c.imageURL
-                          ? <img src={c.imageURL} alt="w" onClick={() => setImgModal(c.imageURL)}
-                            style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', cursor: 'zoom-in' }} />
-                          : <div style={{ width: '48px', height: '48px', borderRadius: '6px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🗑</div>
-                        }
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {c.imageURL ? (
+                            <img src={c.imageURL} alt="Original" onClick={() => setImgModal({ url: c.imageURL, annotatedUrl: c.annotatedImageURL })}
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', cursor: 'zoom-in' }} title="Original Image" />
+                          ) : (
+                            <div style={{ width: '48px', height: '48px', borderRadius: '6px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🗑</div>
+                          )}
+                          
+                          {/* AI Detection Map Thumbnail */}
+                          {c.annotatedImageURL && (
+                            <img src={c.annotatedImageURL} alt="AI Map" onClick={() => setImgModal({ url: c.imageURL, annotatedUrl: c.annotatedImageURL })}
+                              style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', cursor: 'zoom-in', border: '1px solid var(--acid)' }} title="AI Detection Map" />
+                          )}
+                        </div>
                       </td>
+
                       <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px', color: 'var(--acid)' }}>{c.complaintNumber}</td>
                       <td style={{ fontSize: '13px' }}>
                         <div style={{ fontWeight: 500 }}>{c.userName}</div>
                         <div style={{ color: 'var(--text-3)', fontSize: '11px' }}>{c.userEmail}</div>
-                      </td>
+                       </td>
                       <td style={{ fontSize: '13px', maxWidth: '140px', color: 'var(--text-2)' }}>
                         {(c.wasteType || '').split('—')[0].slice(0, 30)}
-                      </td>
+                       </td>
                       <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '140px' }}>{c.agencyEmail}</td>
                       <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace' }}>{c.pincode}</td>
                       <td><StatusBadge status={c.status} /></td>
                       <td style={{ fontSize: '12px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{formatDate(c.timestamp)}</td>
                       <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace', color: 'var(--acid)' }}>
                         {c.energyKwh ? `${c.energyKwh} kWh` : '—'}
-                      </td>
+                       </td>
                       <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px', color: 'var(--acid)' }}>
                         {c.ssimScore != null ? fmtScore(c.ssimScore) : '—'}
-                      </td>
+                       </td>
                       <td>
                         <div className="flex gap-2">
                           {c.imageURL && (
                             <button className="btn btn-outline" style={{ padding: '5px 8px', fontSize: '12px' }}
-                              onClick={() => setImgModal(c.afterImageURL || c.imageURL)}>
+                              onClick={() => setImgModal({ url: c.imageURL, annotatedUrl: c.annotatedImageURL })}>
                               <Eye size={13} />
                             </button>
                           )}
@@ -280,7 +301,7 @@ export default function AdminDashboard() {
                             Edit
                           </button>
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   ))}
                 </tbody>
@@ -289,8 +310,7 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* ── Staff tab ── */}
-        {/* ── Staff tab ── */}
+        {/* Staff tab */}
         {tab === 'staff' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Create Staff Form */}
@@ -312,7 +332,6 @@ export default function AdminDashboard() {
                   <input className="input" type="password" value={newStaff.password} required
                     onChange={e => setNewStaff({ ...newStaff, password: e.target.value })} />
                 </div>
-                {/* Pincode Range Fields */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
                     <label className="label">Pincode Start</label>
@@ -360,7 +379,6 @@ export default function AdminDashboard() {
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'Syne,sans-serif', color: 'var(--text-1)' }}>{s.name}</div>
                           <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>{s.email}</div>
-                          {/* Show assigned pincode range */}
                           {s.assignedPincodeStart && s.assignedPincodeEnd && (
                             <div style={{ fontSize: '11px', color: 'var(--acid)', marginTop: '2px' }}>
                               📍 Area: {s.assignedPincodeStart} - {s.assignedPincodeEnd}

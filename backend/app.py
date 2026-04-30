@@ -8,10 +8,10 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from dotenv import load_dotenv
-from flask_mail import Mail, Message
+from flask_mail import Mail, Message                      
 
-load_dotenv()
-
+load_dotenv()  
+     
 
 mail = Mail() 
 
@@ -20,6 +20,7 @@ def create_app():
     app = Flask(__name__)
     app.config["JWT_SECRET_KEY"]          = os.getenv("JWT_SECRET_KEY", "wasteguard-secret-2024")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"]  = timedelta(hours=24)
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 
 
     CORS(app, resources={r"/api/*": {
         "origins": ["http://localhost:5173", "http://localhost:3000"],

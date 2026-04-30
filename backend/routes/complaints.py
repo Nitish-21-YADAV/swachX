@@ -7,7 +7,7 @@ import requests as rq
 from database import complaints_col, agency_col, generate_complaint_number
 from services.metadata import extract_metadata
 from dotenv import load_dotenv; load_dotenv()
-
+import base64
 from services.energy_model import energy_model
 
 from database import users_col
@@ -283,8 +283,41 @@ def submit():
     # total_weight = yolo.get("total_weight_kg", 0.5)   # agar LLM se nahi aaya toh 0.5 kg assume
 
         # Parse YOLO/LLM results
-    try:    yolo = json.loads(yolo_str)
-    except: yolo = {}
+    # Parse YOLO/LLM results
+    try:
+        yolo = json.loads(yolo_str)
+        # --- Upload annotated image to Cloudinary if present ---
+        annotated_url = None
+        # ✅ JSON ke bajaye direct Form Data se image receive karein
+        annotated_base64 = request.form.get("annotatedImageBase64", "")
+        if annotated_base64:
+            try:
+                annotated_bytes = base64.b64decode(annotated_base64)
+                upload_res = cloudinary.uploader.upload(
+                    annotated_bytes,
+                    folder="wasteguard/annotated",
+                    resource_type="image",  
+                    format="png",   
+                    quality="auto"
+                )
+                annotated_url = upload_res["secure_url"]
+                print(f"[Submit] Annotated image uploaded: {annotated_url}")
+            except Exception as upload_err:
+                print(f"[Submit] Failed to upload annotated image: {upload_err}")
+                annotated_url = None
+        else:
+            annotated_url = None
+    except Exception as parse_err:
+        print(f"[Submit] Error parsing AI results: {parse_err}")
+        yolo = {}
+        annotated_url = None
+
+    waste_type = yolo.get("wasteType", "Mixed Waste")
+    env_impact = yolo.get("environmentalImpact", "Waste causes environmental damage.")
+    total_items = yolo.get("totalItems", 0)          # ← ADD THIS LINE
+    total_weight = yolo.get("totalWeightKg", 0.5)
+
+    
 
     waste_type = yolo.get("wasteType", "Mixed Waste")
     env_impact = yolo.get("environmentalImpact", "Waste causes environmental damage.")
@@ -310,19 +343,22 @@ def submit():
         "userName":           claims.get("name"),
         "description":        description,
         "wasteType":          waste_type,
+        "annotatedImageURL": annotated_url,
+        "totalItems": total_items, 
         "environmentalImpact": env_impact,
         "materialsList": materials_list,
         "degradable":         degradable,
         "recyclable":         recyclable,
         "yoloResults":        yolo,
-        "latitude":           lat,
+        # "annotatedImageBase64": annotated_base64,
+        "latitude":           lat,    
         "longitude":          lng,
         "pincode":            resolved_pin,
         "agencyEmail":        agency_email,
         "streetAddress":      street_addr,
         "landmark":           landmark,
         "imageURL":           image_url,
-        "afterImageURL":      None,
+        "afterImageURL":      None,  
         "ssimScore":          None,
         "status":             "Pending",
         "adminRemark":        "",

@@ -85,9 +85,8 @@ def export_excel():
     ws["A2"].alignment = center
     ws.row_dimensions[2].height = 20
 
-    headers = ["#", "Complaint No.", "User Email", "Waste Type",
-               "Environmental Impact", "Detected Materials", "Agency Email", "Pincode",
-               "Status", "Timestamp", "Resolved At"]
+    headers = ["#", "Complaint No.", "User", "Waste Type", "Environmental Impact",
+           "Agency", "Pincode", "Status", "Timestamp", "Resolved", "Energy (kWh)"]
 
     for col, h in enumerate(headers, 1):
         cell           = ws.cell(row=3, column=col, value=h)
@@ -99,18 +98,20 @@ def export_excel():
 
     for row_idx, doc in enumerate(docs, 4):
         fill = alt_fill if row_idx % 2 == 0 else PatternFill("solid", fgColor="142014")
+        user_display = f"{doc.get('userName', '')}\n{doc.get('userEmail', '')}"
+        energy_val = f"{doc.get('energyKwh', '')} kWh" if doc.get('energyKwh') else "—"
         row_data = [
             row_idx - 3,
             doc.get("complaintNumber", ""),
-            doc.get("userEmail", ""),
+            user_display,
             doc.get("wasteType", ""),
-            doc.get("environmentalImpact"),
-            doc.get("materialsList", ""),
+            doc.get("environmentalImpact", ""),
             doc.get("agencyEmail", ""),
             doc.get("pincode", ""),
             doc.get("status", ""),
             str(doc.get("timestamp", ""))[:19].replace("T", " "),
-            str(doc.get("resolvedAt", "") or "—")[:19]
+            str(doc.get("resolvedAt", "") or "—")[:19],
+            energy_val
         ]
         for col, val in enumerate(row_data, 1):
             cell = ws.cell(row=row_idx, column=col, value=val)
@@ -121,7 +122,7 @@ def export_excel():
         ws.row_dimensions[row_idx].height = 18
 
     # Column widths
-    col_widths = [5, 22, 30, 20, 40, 30, 12, 12, 22, 22]
+    col_widths = [5, 22, 30, 25, 45, 25, 12, 15, 22, 22, 15]
     for i, w in enumerate(col_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -175,26 +176,28 @@ def export_pdf():
         Spacer(1, 0.3*cm)
     ]
 
-    headers = [["#", "Complaint No.", "User Email", "Waste Type", "Detected Materials",
-                 "Env. Impact", "Agency", "Pincode", "Status", "Timestamp"]]
+    headers = [["#", "Complaint No.", "User", "Waste Type", "Environmental Impact",
+                "Agency", "Pincode", "Status", "Timestamp", "Energy"]]
     table_data = headers[:]
+
     for i, doc_item in enumerate(docs, 1):
-        status     = doc_item.get("status", "Pending")
-        impact_txt = (doc_item.get("environmentalImpact","") or "")[:55]
+        status = doc_item.get("status", "Pending")
+        energy_val = f"{doc_item.get('energyKwh', '')} kWh" if doc_item.get('energyKwh') else "—"
+        user_display = f"{doc_item.get('userName', '')}\n{doc_item.get('userEmail', '')}"
         table_data.append([
             str(i),
-            doc_item.get("complaintNumber",""),
-            doc_item.get("userEmail",""),
-            doc_item.get("wasteType",""),
-            Paragraph(doc_item.get("environmentalImpact","")[:200], wrap_style),
-            Paragraph(doc_item.get("materialsList",""), wrap_style),
-            doc_item.get("agencyEmail",""),
-            doc_item.get("pincode",""),
+            doc_item.get("complaintNumber", ""),
+            user_display,
+            doc_item.get("wasteType", ""),
+            Paragraph(doc_item.get("environmentalImpact", "")[:200], wrap_style),
+            doc_item.get("agencyEmail", ""),
+            doc_item.get("pincode", ""),
             status,
-            str(doc_item.get("timestamp",""))[:16]
+            str(doc_item.get("timestamp", ""))[:16],
+            energy_val
         ])
 
-    col_widths_pt = [1*cm, 3.5*cm, 4.5*cm, 3*cm, 5.5*cm, 4.5*cm, 2*cm, 2.2*cm, 3.5*cm]
+    col_widths_pt = [0.8*cm, 3.0*cm, 4.0*cm, 2.5*cm, 6.0*cm, 3.5*cm, 1.8*cm, 2.0*cm, 2.8*cm, 1.6*cm]
     tbl = Table(table_data, colWidths=col_widths_pt, repeatRows=1)
 
     style = TableStyle([
@@ -203,7 +206,7 @@ def export_pdf():
         ("FONTNAME",    (0,0), (-1,0), "Helvetica-Bold"),
         ("FONTSIZE",    (0,0), (-1,0), 8),
         ("ALIGN",       (0,0), (-1,0), "CENTER"),
-        ("BACKGROUND",  (0,1), (-1,-1), SURFACE),
+        ("BACKGROUND",  (0,1), (-1,-1), SURFACE), 
         ("TEXTCOLOR",   (0,1), (-1,-1), TEXT),
         ("FONTNAME",    (0,1), (-1,-1), "Helvetica"),
         ("FONTSIZE",    (0,1), (-1,-1), 7.5),
@@ -221,7 +224,7 @@ def export_pdf():
 
     tbl.setStyle(style)
     story.append(tbl)
-    doc.build(story)
+    doc.build(story)   
     output.seek(0)
 
     fname = f"WasteGuard_Report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M')}.pdf"
