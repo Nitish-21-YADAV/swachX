@@ -1,31 +1,24 @@
-# ♻️ SwatchX — Smart Waste Complaint Management System
+# SwachX – Waste Management with AI Agents
 
-A full-stack system for Detecting, Classifying, Reporting, Routing, Verifying and Managing waste complaints.
+SwachX is a full‑stack waste complaint system where citizens report garbage, staff verify cleaning, and AI agents handle fraud detection, escalation, and infrastructure suggestions. Built with Flask, FastAPI, React, MongoDB, and Gemini 2.5 Flash.
 
----
+## What works right now
 
-## Architecture
+- Citizen uploads waste image → AI detects items, counts them, shows bounding boxes.
+- Complaint automatically assigned to staff based on pincode range.
+- Staff uploads after‑cleaning image → Twin‑Vision Agent (Gemini) checks location + leftover waste → status becomes Cleaned / Pending Review / Rejected.
+- Every 12 hours, an Escalation Agent scans stale pending complaints (>48h) and either warns staff or escalates to admin.
+- Every Sunday night, a Predictive Agent analyses complaint trends and saves bin/resource recommendations.
+- Admin dashboard shows all complaints, staff management, reports (Excel/PDF), and AI predictions.
+- Emails go out for complaint confirmation, staff assignment, warning, escalation.
 
-```
-wasteguard_v2/
-├── backend/          Flask API (Port 5000)
-│   ├── routes/       auth, complaints, admin, staff, reports
-│   ├── services/     metadata (EXIF), ssim_service
-│   └── scripts/      seed_agencies.py
-│
-├── ai_service/       FastAPI YOLOv11 Service (Port 8000)
-│   ├── routes/       detection.py
-│   └── yolo_service.py
-│
-└── frontend/         React + Vite (Port 5173)
-    └── src/
-        ├── pages/    Landing, Login, Register, UserDashboard,
-        │             NewComplaint, AdminDashboard, StaffDashboard, Reports
-        └── components/
-```
+## Tech stack (what I used)
 
+- **Backend** – Flask (Python 3.13), JWT, Flask‑Mail, APScheduler
+- **AI service** – FastAPI, Gemini 2.5 Flash (via `google-genai` SDK)
+- **Frontend** – React + Vite, Tailwind CSS (custom theme)
+- **Database** – MongoDB (four databases: auth, complaints, agency, verification)
+- **Image storage** – Cloudinary
+- **Background tasks** – APScheduler (no need for Celery)
 
-
-
-
-<!--        nitishstaff@gmail.com               -->
+## Folder structure
