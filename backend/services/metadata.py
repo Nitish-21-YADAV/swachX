@@ -27,7 +27,7 @@ def extract_metadata(img_bytes: bytes) -> dict:
     try:
         img = Image.open(io.BytesIO(img_bytes))
         raw_exif = img._getexif()
-        if not raw_exif:
+        if not raw_exif:    
             return result
 
         exif = {TAGS.get(k, k): v for k, v in raw_exif.items()}
