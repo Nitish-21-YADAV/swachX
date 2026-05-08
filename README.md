@@ -1,4 +1,4 @@
-# SwachX – Waste Management with AI Agents
+# SwachX – Waste Management with Agents - No Human Interaction 
 
 SwachX is a full‑stack waste complaint system where citizens report garbage, staff verify cleaning, and AI agents handle fraud detection, escalation, and infrastructure suggestions. Built with Flask, FastAPI, React, MongoDB, and Gemini 2.5 Flash.
 
@@ -23,6 +23,7 @@ SwachX is a full‑stack waste complaint system where citizens report garbage, s
 
 ## Folder structure
 
+```bash
 SwachX/
 ├── backend/
 │ ├── routes/ # auth, complaints, admin, staff, reports, agent
@@ -38,8 +39,7 @@ SwachX/
 │ ├── src/
 │ └── .env
 └── README.md
-
-
+```
 ## Agents inside SwachX
 
 - **Twin‑Vision Agent (verification)** – Compares before/after images...
