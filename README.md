@@ -22,3 +22,29 @@ SwachX is a full‑stack waste complaint system where citizens report garbage, s
 - **Background tasks** – APScheduler (no need for Celery)
 
 ## Folder structure
+
+SwachX/
+├── backend/
+│ ├── routes/ # auth, complaints, admin, staff, reports, agent
+│ ├── services/ # email_service, energy_model, twin_vision_agent, advanced_agents, location_verifier, ssim_service
+│ ├── database.py
+│ ├── app.py
+│ └── .env
+├── ai_service/
+│ ├── llm_detector.py # Gemini prompt + bounding box drawing
+│ ├── main.py # FastAPI app
+│ └── .env
+├── frontend/
+│ ├── src/
+│ └── .env
+└── README.md
+
+
+Agents inside SwachX
+- Twin‑Vision Agent (verification)
+- Monitoring & Escalation Agent
+- Predictive Analytics Agent
+
+Reports
+- Admins can export last 10 or last 30 complaints as Excel or PDF.
+- Reports include complaint number, user, waste type, agency, status, energy saved, CO₂ offset
