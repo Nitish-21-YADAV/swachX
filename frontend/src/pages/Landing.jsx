@@ -1,21 +1,21 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Cpu, Shield, MapPin, BarChart3, CheckCircle, Zap } from 'lucide-react'
+import { ArrowRight, Cpu, Shield, MapPin, BarChart3, CheckCircle, Zap, Bot, TrendingUp, Clock } from 'lucide-react'
 import Navbar from '../components/layout/Navbar'
 
 const FEATURES = [
-  { icon: Cpu,        title: 'YOLOv11 AI Detection',   desc: 'Real-time waste classification with environmental impact data from a comprehensive knowledge base.' },
-  { icon: MapPin,     title: 'GPS & EXIF Routing',       desc: 'Extracts GPS coordinates from image metadata to auto-assign complaints to responsible agencies.' },
-  { icon: Shield,     title: 'SSIM Verification',        desc: 'Before/after image comparison using Structural Similarity Index to verify cleanup authenticity.' },
-  { icon: BarChart3,  title: 'Live Dashboards',          desc: 'Role-specific dashboards for citizens, administrators and cleaning agencies updated in real time.' },
-  { icon: CheckCircle,title: 'Auto Agency Routing',      desc: 'Pincode-based matching routes every complaint to the correct municipal agency instantly.' },
-  { icon: Zap,        title: 'PDF & Excel Reports',      desc: 'Admin-generated reports with complaint data, agency assignments, and resolution timelines.' },
+  { icon: Bot,        title: 'Twin‑Vision Agent',   desc: ' Agent compares before/after images, verifies location, counts waste, and auto‑updates status.' },
+  { icon: Clock,      title: 'Escalation Agent',     desc: 'Scans stale pending complaints every 12h; warns staff or escalates to admin after 48‑72h delay.' },
+  { icon: TrendingUp, title: 'Predictive Agent',     desc: 'Weekly analysis of complaint trends; suggests bin deployment & resource allocation reports.' },
+  { icon: MapPin,     title: 'GPS & Manual Location',desc: 'Captures user/staff coordinates (EXIF or manual) to ensure same‑spot verification.' },
+  { icon: Shield,     title: 'Fraud Detection',      desc: 'Agent checks location consistency & framing; rejects deceptive after‑images automatically.' },
+  { icon: BarChart3,  title: 'Live Dashboards',      desc: 'Role‑specific dashboards for citizens, staff, admins with real‑time updates & AI recommendations.' },
 ]
 
 const STEPS = [
-  { num:'01', title:'Report Waste',     desc:'Upload a photo — GPS coordinates and pincode are extracted automatically from EXIF metadata.' },
-  { num:'02', title:'AI Classification', desc:'YOLOv11 identifies waste type, degradability, and environmental impact before you submit.' },
-  { num:'03', title:'Auto Routing',     desc:'The system finds the responsible agency from agencyDB and assigns your complaint instantly.' },
-  { num:'04', title:'SSIM Verified',    desc:'Agency staff upload an after-photo. SSIM comparison confirms cleanup authenticity automatically.' },
+  { num:'01', title:'Report Waste',     desc:'Upload a photo — GPS coordinates are extracted automatically or entered manually. AI counts waste items and detects plastic types.' },
+  { num:'02', title:'LLM Classification', desc:'LLM identifies waste type, total items, weights, and environmental impact. Bounding boxes are drawn on the image.' },
+  { num:'03', title:'Auto Routing',     desc:'System matches pincode to staff range; assigns complaint and sends email notifications to both citizen and staff.' },
+  { num:'04', title:'Twin‑Vision Agent Verification', desc:'Staff uploads after‑cleaning photo. The agent checks and updates final status.' },
 ]
 
 export default function Landing() {
@@ -30,7 +30,6 @@ export default function Landing() {
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Decorative grid */}
         <div style={{
           position:'absolute', inset:0,
           backgroundImage:'linear-gradient(rgba(200,241,53,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(200,241,53,0.03) 1px, transparent 1px)',
@@ -43,17 +42,17 @@ export default function Landing() {
                         fontFamily:'Helvetica', fontSize:'12px', fontWeight:700,
                         color:'var(--acid)', letterSpacing:'1px', textTransform:'uppercase' }}>
             <span className="w-2 h-2 rounded-full animate-pulse-dot" style={{background:'var(--acid)'}} />
-            AI-Powered Waste Management System
+            Multi‑Agent Waste Management
           </div>
 
           <h1 className="heading mb-6" style={{ fontSize:'clamp(2.8rem,7vw,7rem)', lineHeight:1.05, color:'var(--text-1)' }}>
-            Report Waste.<br />
-            <span style={{ color:'var(--acid)' }}>Save the Planet.</span>
+            SwachX.<br />
+            <span style={{ color:'var(--acid)' }}>Agent Based System </span>
           </h1>
 
           <p style={{ fontSize:'1.1rem', color:'var(--text-2)', maxWidth:'520px', margin:'0 auto 40px', lineHeight:1.7 }}>
-            Upload a photo of illegal dumping. Our AI classifies the waste, routes it to the right agency, 
-            and verifies cleanup — all automatically.
+            Upload a photo of illegal dumping. Twin‑Vision Agent verifies cleanup, Escalation Agent handles delays, 
+            Predictive Agent plans infrastructure — fully automated.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -65,12 +64,11 @@ export default function Landing() {
             </Link>
           </div>
 
-          {/* Stats row */}
           <div className="flex items-center justify-center gap-12 mt-16 flex-wrap">
-            {[['4 Databases','Isolated & Secure'],['YOLOv11','14 Waste Classes'],['SSIM Verified','Before/After AI Check'],['3 Roles','User · Admin · Staff']].map(([num,lab]) => (
+            {[['3 AI Agents','Twin‑Vision · Escalation · Predictive'],['4 Databases','Auth · Complaints · Agency · Logs'],['3 Roles','Citizen · Staff · Admin'],['LLM Based','Zero‑shot Classification']].map(([num,lab]) => (
               <div key={num} className="text-center">
                 <div className="heading text-xl" style={{color:'var(--acid)'}}>{num}</div>
-                <div style={{color:'var(--text-3)',fontSize:'12px',marginTop:'2px',fontFamily:'Syne,sans-serif'}}>{lab}</div>
+                <div style={{color:'var(--text-3)',fontSize:'11px',marginTop:'2px',fontFamily:'Syne,sans-serif'}}>{lab}</div>
               </div>
             ))}
           </div>
@@ -91,7 +89,7 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {STEPS.map(({ num, title, desc }) => (
-              <div key={num} className="card card-glow p-6 ">
+              <div key={num} className="card card-glow p-6">
                 <div className="heading mb-3" style={{ fontSize:'3rem', color:'rgb(241, 141, 53)', lineHeight:1 }}>
                   {num}
                 </div>
@@ -113,7 +111,7 @@ export default function Landing() {
                         fontWeight:700, letterSpacing:'2px', textTransform:'uppercase', marginBottom:'8px' }}>
               FEATURES
             </p>
-            <h2 className="heading" style={{ fontSize:'2.2rem', color:'var(--text-1)' }}>Built for Real Impact</h2>
+            <h2 className="heading" style={{ fontSize:'2.2rem', color:'var(--text-1)' }}>Powered by AI Agents</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
@@ -140,7 +138,7 @@ export default function Landing() {
               Start Reporting Today
             </h2>
             <p style={{color:'var(--text-2)',marginBottom:'32px',fontSize:'15px'}}>
-              Join the platform that connects citizens with municipal agencies through AI-verified waste complaints.
+              Join the platform where AI agents verify cleanup, escalate delays, and plan smarter infrastructure.
             </p>
             <Link to="/register" className="btn btn-primary" style={{fontSize:'15px',padding:'14px 36px'}}>
               Create Free Account <ArrowRight size={16}/>
@@ -152,7 +150,7 @@ export default function Landing() {
       {/* Footer */}
       <footer style={{ borderTop:'1px solid var(--border)', padding:'24px 0', textAlign:'center' }}>
         <p style={{ color:'var(--text-3)', fontSize:'12px', fontFamily:'Syne,sans-serif' }}>
-          © 2024 WasteGuard — AI Waste Complaint Management System
+          © 2025 SwachX — Multi‑Agent AI Waste Complaint Management System
         </p>
       </footer>
     </div>
