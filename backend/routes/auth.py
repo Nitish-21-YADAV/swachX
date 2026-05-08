@@ -30,7 +30,7 @@ def register():
         return jsonify({"error": "Name, email and password are required"}), 400
     if not _valid_email(email):
         return jsonify({"error": "Invalid email format"}), 400
-    if len(password) < 6:
+    if len(password) < 6:    
         return jsonify({"error": "Password must be at least 6 characters"}), 400
     if email == ADMIN_EMAIL:
         return jsonify({"error": "This email is reserved"}), 400
@@ -40,7 +40,7 @@ def register():
     result = users_col().insert_one({
         "name": name, "email": email, "phone": phone,
         "password": _hash(password), "role": "user",
-        "createdAt": datetime.datetime.utcnow()
+        "createdAt": datetime.datetime.utcnow()       
     })
     token = create_access_token(
         identity=str(result.inserted_id),

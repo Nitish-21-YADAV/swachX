@@ -113,18 +113,26 @@ export default function ReportsPage() {
           </div>
         ) : data?.complaints?.length > 0 ? (
           <div className="card" style={{ overflowX: 'auto' }}>
-            <table className="table">
+            <table className="table" style={{ minWidth: '1000px', width: '100%' }}>
               <thead>
                 <tr>
-                  {['#', 'Complaint No.', 'User', 'Waste Type', 'Environmental Impact', 'Agency', 'Pincode', 'Status', 'Timestamp', 'Resolved', 'Energy'].map(h => (
-                    <th key={h}>{h}</th>
-                  ))}
+                  <th>#</th>
+                  <th>Complaint No.</th>
+                  <th>User</th>
+                  <th>Waste Type</th>
+                  <th>Environmental Impact</th>
+                  <th>Agency</th>
+                  <th>Pincode</th>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                  <th>Resolved</th>
+                  <th>Energy</th>
                 </tr>
               </thead>
               <tbody>
                 {data.complaints.map((c, i) => (
                   <tr key={c._id}>
-                    <td style={{ color: 'var(--text-3)', fontSize: '12px' }}>{i + 1}</td>
+                    <td style={{ color: 'var(--text-3)', fontSize: '12px', textAlign: 'center' }}>{i + 1}</td>
                     <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px', color: 'var(--acid)', whiteSpace: 'nowrap' }}>
                       {c.complaintNumber}
                     </td>
@@ -132,28 +140,19 @@ export default function ReportsPage() {
                       <div style={{ fontWeight: 500, color: 'var(--text-1)' }}>{c.userName}</div>
                       <div style={{ color: 'var(--text-3)', fontSize: '10px' }}>{c.userEmail}</div>
                     </td>
-                    <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '120px' }}>
-                      {(c.wasteType || '').split('—')[0].slice(0, 25)}
-                    </td>
-                    <td style={{ fontSize: '11px', color: 'var(--text-3)', maxWidth: '200px', lineHeight: 1.5 }}>
-                      {(c.environmentalImpact || '').slice(0, 80)}{(c.environmentalImpact || '').length > 80 ? '…' : ''}
-                    </td>
-                    <td style={{ fontSize: '11px', color: 'var(--text-2)', maxWidth: '130px' }}>{c.agencyEmail}</td>
-                    <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px' }}>{c.pincode}</td>
-                    {/* ✅ FIX: Added minWidth, whiteSpace, and wordBreak to stop overlap */}
-                    <td style={{
-                      fontSize: '12px', color: 'var(--text-2)', minWidth: '150px', 
-                      whiteSpace: 'normal', wordBreak: 'break-word', paddingRight: '12px'
-                    }}>
+                    <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '150px', wordBreak: 'break-word' }}>
                       {(c.wasteType || '').split('—')[0]}
                     </td>
-                    
-                    <td style={{
-                      fontSize: '11px', color: 'var(--text-3)', minWidth: '220px', 
-                      whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.5, paddingRight: '12px'
-                    }}>
-                      {c.environmentalImpact}
+                    <td style={{ fontSize: '11px', color: 'var(--text-3)', maxWidth: '250px', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                      {c.environmentalImpact ? (c.environmentalImpact.length > 100 ? c.environmentalImpact.slice(0, 100) + '…' : c.environmentalImpact) : '—'}
                     </td>
+                    <td style={{ fontSize: '11px', color: 'var(--text-2)' }}>{c.agencyEmail}</td>
+                    <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px' }}>{c.pincode}</td>
+                    <td style={{ fontSize: '12px' }}>
+                      <StatusBadge status={c.status} />
+                    </td>
+                    <td style={{ fontSize: '11px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{formatDate(c.timestamp)}</td>
+                    <td style={{ fontSize: '11px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{c.resolvedAt ? formatDate(c.resolvedAt) : '—'}</td>
                     <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace', color: 'var(--acid)' }}>
                       {c.energyKwh ? `${c.energyKwh} kWh` : '—'}
                     </td>

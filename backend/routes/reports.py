@@ -58,7 +58,7 @@ def export_excel():
     ws.title = "WasteGuard Report"
 
     # Styling
-    header_fill  = PatternFill("solid", fgColor="1A3C1A")
+    header_fill  = PatternFill("solid", fgColor="1A3C1A")    
     header_font  = Font(bold=True, color="A3E635", size=11)
     alt_fill     = PatternFill("solid", fgColor="0F1A0F")
     center       = Alignment(horizontal="center", vertical="center")

@@ -11,5 +11,5 @@ async def detect(file: UploadFile = File(...)):
     result    = run_detection(img_bytes)
     if "error" in result and result.get("totalItems", 0) == 0:
         raise HTTPException(status_code=503, detail=result["error"])
-    return result
-    
+    return result        
+                 

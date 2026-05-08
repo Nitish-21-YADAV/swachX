@@ -203,7 +203,7 @@ def analyze_waste_image(image_bytes: bytes) -> dict:
         img_buffer = io.BytesIO()
         original_image.save(img_buffer, format="JPEG", quality=90)
         
-        # ✅ STEP 2: Call Gemini API
+        # ✅ STEP 2: Call Gemini API            
         raw_text = call_gemini(img_buffer.getvalue())
         result = extract_and_fix_json(raw_text)
 
@@ -215,10 +215,10 @@ def analyze_waste_image(image_bytes: bytes) -> dict:
         # ✅ STEP 4: Force maximum 15 objects (Prevents UI Freeze)
         detections = result.get("detections", [])
         detections = detections[:40] 
-        result["detections"] = detections
+        result["detections"] = detections          
         result["totalItems"] = len(detections)
-        print(f"[llm_detector] Safely rendering {len(detections)} objects.")
-
+        print(f"[llm_detector] Safely rendering {len(detections)} objects.")   
+  
         # ✅ STEP 5: Draw boxes locally (Zero API tokens)
         annotated = draw_boxes(original_image.copy(), detections)
 
@@ -232,12 +232,12 @@ def analyze_waste_image(image_bytes: bytes) -> dict:
     except Exception as e:
         print(f"[llm_detector] Fatal error:")
         traceback.print_exc()
-        return {
-            "error": str(e),
+        return {    
+            "error": str(e),                                
             "wasteType": "Unknown",
             "environmentalImpact": "Analysis failed.",
             "totalItems": 0,
             "totalWeightKg": 0.0,
             "detections": [],
             "annotated_image_base64": ""
-        }
+        }    

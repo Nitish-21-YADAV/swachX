@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, X, CheckCircle, XCircle, Users, FileText, Eye } from 'lucide-react'
+import { RefreshCw, X, CheckCircle, XCircle, Users, FileText, Eye, TrendingUp, MapPin, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../utils/api'
 import Navbar from '../components/layout/Navbar'
@@ -42,7 +42,7 @@ function ImageModal({ url, annotatedUrl, onClose }) {
         
         {annotatedUrl && (
           <div style={{ flex: 1 }}>
-            <div className="label" style={{ color: 'white', marginBottom: '8px' }}>AI Detection Map</div>
+            <div className="label" style={{ color: 'white', marginBottom: '8px' }}>Detection Mapped Image</div>
             <img src={annotatedUrl} alt="Annotated" style={{ maxWidth: '45vw', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
           </div>
         )}
@@ -119,6 +119,88 @@ function StatusModal({ complaint, onClose, onUpdate }) {
   )
 }
 
+// ========== NEW: Analysis Modal ==========
+function AnalysisModal({ onClose, recommendations }) {
+  if (!recommendations) return null;
+  
+  const binRecs = recommendations.filter(r => r.type === 'bin_deployment');
+  const resourceRecs = recommendations.filter(r => r.type === 'resource_report');
+  
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg-card)', borderRadius: '20px', maxWidth: '800px', width: '100%',
+        maxHeight: '80vh', overflowY: 'auto', padding: '24px', border: '1px solid var(--border)'
+      }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="heading" style={{ fontSize: '1.5rem' }}>Predictive Agent Analysis</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
+            <X size={24} />
+          </button>
+        </div>
+        
+        {recommendations.length === 0 ? (
+          <p style={{ color: 'var(--text-2)' }}>No analysis recommendations yet. Agent will run weekly.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Bin Deployment Recommendations */}
+            {binRecs.length > 0 && (
+              <div>
+                <h3 className="label mb-3" style={{ fontSize: '16px', color: 'var(--acid)' }}>🗑️ Bin Deployment Suggestions</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {binRecs.map((rec, idx) => (
+                    <div key={idx} className="card p-4" style={{ background: 'rgba(200,241,53,0.05)' }}>
+                      <div className="flex items-start gap-3">
+                        <MapPin size={18} style={{ color: 'var(--acid)' }} />
+                        <div>
+                          <p><strong>Pincode:</strong> {rec.pincode}</p>
+                          <p><strong>Bin Type:</strong> {rec.bin_type}</p>
+                          <p><strong>Justification:</strong> {rec.justification}</p>
+                          <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Generated: {new Date(rec.timestamp).toLocaleString()}</p>
+                          <span className={`badge ${rec.status === 'pending' ? 'badge-warning' : 'badge-success'}`} style={{ marginTop: '6px', display: 'inline-block' }}>
+                            {rec.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Resource Allocation Reports */}
+            {resourceRecs.length > 0 && (
+              <div>
+                <h3 className="label mb-3" style={{ fontSize: '16px', color: 'var(--acid)' }}>📊 Resource Allocation Reports</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {resourceRecs.map((rec, idx) => (
+                    <div key={idx} className="card p-4" style={{ background: 'rgba(74,222,128,0.05)' }}>
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle size={18} style={{ color: '#FBBF24' }} />
+                        <div>
+                          <p><strong>Critical Pincodes:</strong> {rec.critical_pincodes?.join(', ') || 'N/A'}</p>
+                          <p><strong>Summary:</strong> {rec.summary}</p>
+                          <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Generated: {new Date(rec.timestamp).toLocaleString()}</p>
+                          <span className={`badge ${rec.status === 'pending' ? 'badge-warning' : 'badge-success'}`} style={{ marginTop: '6px' }}>
+                            {rec.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [complaints, setComplaints] = useState([])
   const [stats, setStats] = useState({})
@@ -130,6 +212,11 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState([])
   const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', pincodeStart: '', pincodeEnd: '', agencyEmail: '' })
   const [staffBusy, setStaffBusy] = useState(false)
+
+  // New state for analysis modal
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false)
+  const [recommendations, setRecommendations] = useState([])
+  const [analysisLoading, setAnalysisLoading] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -148,6 +235,20 @@ export default function AdminDashboard() {
   const fetchStaff = async () => {
     try { const { data } = await api.get('/auth/staff/list'); setStaffList(data) }
     catch (e) { toast.error(errMsg(e)) }
+  }
+
+  // Fetch recommendations from backend
+  const openAnalysisModal = async () => {
+    setAnalysisLoading(true)
+    try {
+      const { data } = await api.get('/agent/recommendations')
+      setRecommendations(data)
+      setShowAnalysisModal(true)
+    } catch (e) {
+      toast.error('Failed to load analysis data')
+    } finally {
+      setAnalysisLoading(false)
+    }
   }
 
   useEffect(() => { fetchData() }, [filter])
@@ -176,6 +277,7 @@ export default function AdminDashboard() {
       <Navbar />
       {imgModal && <ImageModal url={imgModal.url} annotatedUrl={imgModal.annotatedUrl} onClose={() => setImgModal(null)} />}
       {statusModal && <StatusModal complaint={statusModal} onClose={() => setStatusModal(null)} onUpdate={fetchData} />}
+      {showAnalysisModal && <AnalysisModal recommendations={recommendations} onClose={() => setShowAnalysisModal(false)} />}
 
       <div className="page-wrapper" style={{ paddingTop: '36px', paddingBottom: '60px' }}>
         {/* Header */}
@@ -187,6 +289,10 @@ export default function AdminDashboard() {
           <div className="flex gap-3">
             <button className="btn btn-outline" onClick={fetchData}>
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Refresh
+            </button>
+            {/* NEW: View Analysis button */}
+            <button className="btn btn-outline" onClick={openAnalysisModal} style={{ borderColor: 'var(--acid)', color: 'var(--acid)' }}>
+              <TrendingUp size={15} /> View Analysis
             </button>
             <Link to="/reports" className="btn btn-primary"><FileText size={15} /> Reports</Link>
           </div>
@@ -252,7 +358,6 @@ export default function AdminDashboard() {
                     <tr><td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>No complaints found</td></tr>
                   ) : complaints.map(c => (
                     <tr key={c._id}>
-                      {/* ✅ Updated Side-by-Side Images Column */}
                       <td>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           {c.imageURL ? (
@@ -261,33 +366,30 @@ export default function AdminDashboard() {
                           ) : (
                             <div style={{ width: '48px', height: '48px', borderRadius: '6px', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🗑</div>
                           )}
-                          
-                          {/* AI Detection Map Thumbnail */}
                           {c.annotatedImageURL && (
                             <img src={c.annotatedImageURL} alt="AI Map" onClick={() => setImgModal({ url: c.imageURL, annotatedUrl: c.annotatedImageURL })}
                               style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', cursor: 'zoom-in', border: '1px solid var(--acid)' }} title="AI Detection Map" />
                           )}
                         </div>
                       </td>
-
                       <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px', color: 'var(--acid)' }}>{c.complaintNumber}</td>
                       <td style={{ fontSize: '13px' }}>
                         <div style={{ fontWeight: 500 }}>{c.userName}</div>
                         <div style={{ color: 'var(--text-3)', fontSize: '11px' }}>{c.userEmail}</div>
-                       </td>
+                      </td>
                       <td style={{ fontSize: '13px', maxWidth: '140px', color: 'var(--text-2)' }}>
                         {(c.wasteType || '').split('—')[0].slice(0, 30)}
-                       </td>
+                      </td>
                       <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '140px' }}>{c.agencyEmail}</td>
                       <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace' }}>{c.pincode}</td>
                       <td><StatusBadge status={c.status} /></td>
                       <td style={{ fontSize: '12px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{formatDate(c.timestamp)}</td>
                       <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace', color: 'var(--acid)' }}>
                         {c.energyKwh ? `${c.energyKwh} kWh` : '—'}
-                       </td>
+                      </td>
                       <td style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '12px', color: 'var(--acid)' }}>
                         {c.ssimScore != null ? fmtScore(c.ssimScore) : '—'}
-                       </td>
+                      </td>
                       <td>
                         <div className="flex gap-2">
                           {c.imageURL && (
@@ -301,7 +403,7 @@ export default function AdminDashboard() {
                             Edit
                           </button>
                         </div>
-                       </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -310,10 +412,9 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* Staff tab */}
+        {/* Staff tab (unchanged) */}
         {tab === 'staff' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Create Staff Form */}
             <div className="card card-glow p-6">
               <h3 className="section-title mb-5">Create Staff Account</h3>
               <form onSubmit={createStaff}>
@@ -362,7 +463,6 @@ export default function AdminDashboard() {
               </form>
             </div>
 
-            {/* Staff List */}
             <div className="card p-6">
               <h3 className="section-title mb-4">Existing Staff ({staffList.length})</h3>
               {staffList.length === 0

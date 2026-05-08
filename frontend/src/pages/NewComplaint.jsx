@@ -1,12 +1,103 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Cpu, MapPin, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Send } from 'lucide-react'
+import { Upload, Cpu, MapPin, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Send, Locate } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api, { aiApi } from '../utils/api'
 import Navbar from '../components/layout/Navbar'
 import { errMsg } from '../utils/helpers'
 
 const STEP_LABELS = ['Upload Image', 'AI Analysis', 'Register Complaint']
+
+// Helper: request GPS location
+const requestLocation = () => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported'))
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          })
+        },
+        (error) => reject(error),
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    }
+  })
+}
+
+// Helper: resize image before upload (for AI)
+const resizeImage = (file, maxWidth = 1024, maxHeight = 1024, quality = 0.85) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height
+            height = maxHeight
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }))
+        }, 'image/jpeg', quality)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+// Helper: resize image for final submission (lighter)
+const resizeImageForUpload = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height
+            height = maxHeight
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }))
+        }, 'image/jpeg', quality)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function NewComplaint() {
   const [step, setStep] = useState(0)
@@ -24,125 +115,87 @@ export default function NewComplaint() {
   const fileRef = useRef()
   const nav = useNavigate()
 
+  // Manual GPS state
+  const [manualGps, setManualGps] = useState(null)
+  const [locationEnabled, setLocationEnabled] = useState(false)
+
   // Agency fetch states
   const [fetchingAgency, setFetchingAgency] = useState(false)
 
   const toggle = k => setExpanded(p => ({ ...p, [k]: !p[k] }))
+
+  const enableLocation = async () => {
+    try {
+      const loc = await requestLocation()
+      setManualGps(loc)
+      setLocationEnabled(true)
+      toast.success(`Location captured: ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`)
+      // Update meta with GPS coordinates
+      setMeta(prev => ({
+        ...prev,
+        latitude: loc.lat,
+        longitude: loc.lng,
+        hasGPS: true
+      }))
+    } catch (err) {
+      console.error(err)
+      toast.error('Unable to get location. Please enable GPS in browser settings.')
+    }
+  }
 
   const handleFile = useCallback(async (f) => {
     if (!f || !f.type.startsWith('image/')) { toast.error('Please select an image file'); return }
     setFile(f)
     setPreview(URL.createObjectURL(f))
 
-    // Extract metadata from image (EXIF – may contain GPS)
     setMetaLoading(true)
     try {
-      const fd = new FormData(); fd.append('file', f)
+      const fd = new FormData()
+      fd.append('file', f)
+      // If manual GPS is enabled, send it to backend
+      if (manualGps) {
+        fd.append('latitude', manualGps.lat)
+        fd.append('longitude', manualGps.lng)
+      }
       const { data } = await api.post('/complaints/extract-meta', fd)
       setMeta(data)
     } catch (e) { setMeta({ error: errMsg(e) }) }
     finally { setMetaLoading(false) }
-  }, [])
+  }, [manualGps])
 
   const handleDrop = e => {
     e.preventDefault(); setDragOver(false)
     handleFile(e.dataTransfer.files[0])
   }
-// Helper to resize image before upload
-const resizeImageForUpload = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > maxWidth) {
-            height *= maxWidth / width;
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width *= maxHeight / height;
-            height = maxHeight;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-        }, 'image/jpeg', quality);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-};
-  const resizeImage = (file, maxWidth = 1024, maxHeight = 1024) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > maxWidth) {
-            height *= maxWidth / width;
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width *= maxHeight / height;
-            height = maxHeight;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-        }, 'image/jpeg', 0.85);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-};
 
-const runAI = async () => {
-  if (!file) return
-  setAiLoading(true)
-  try {
-    const fd = new FormData()
-    const resizedFile = await resizeImage(file);
-    fd.append('file', resizedFile);
-    const { data } = await aiApi.post('/detect', fd)
-    console.log("AI Response received:", data)
-    console.log("Has annotated_image_base64?", !!data.annotated_image_base64)
-    setAiResult(data)
-    setStep(1)
-  } catch (e) {
-    console.error("AI error:", e)
-    toast.error('AI service unavailable — you can still submit')
-    setAiResult({
-      wasteType: 'Unknown',
-      environmentalImpact: 'AI unavailable',
-      totalItems: 0,
-      plastics: [],
-      others: [],
-    })
-    setStep(1)
-  } finally {
-    setAiLoading(false)
+  const runAI = async () => {
+    if (!file) return
+    setAiLoading(true)
+    try {
+      const fd = new FormData()
+      const resizedFile = await resizeImage(file, 1024, 1024, 0.85)
+      fd.append('file', resizedFile)
+      const { data } = await aiApi.post('/detect', fd)
+      console.log("AI Response received:", data)
+      console.log("Has annotated_image_base64?", !!data.annotated_image_base64)
+      setAiResult(data)
+      setStep(1)
+    } catch (e) {
+      console.error("AI error:", e)
+      toast.error('AI service unavailable — you can still submit')
+      setAiResult({
+        wasteType: 'Unknown',
+        environmentalImpact: 'AI unavailable',
+        totalItems: 0,
+        plastics: [],
+        others: [],
+      })
+      setStep(1)
+    } finally {
+      setAiLoading(false)
+    }
   }
-}
+
   const fetchAgencyByPincode = async (pincode) => {
     if (!pincode || pincode.length !== 6) return
     setFetchingAgency(true)
@@ -191,28 +244,22 @@ const runAI = async () => {
 
     setSubmitting(true)
     try {
-      const resizedFile = await resizeImageForUpload(file, 1200, 1200, 0.8);
-  const fd = new FormData();
-  fd.append('file', resizedFile);
-      fd.append('file', file)
+      const resizedFile = await resizeImageForUpload(file, 1200, 1200, 0.8)
+      const fd = new FormData()
+      fd.append('file', resizedFile)
       fd.append('description', desc)
       fd.append('pincode', finalPincode)
-      fd.append('latitude', meta?.latitude || '')
-      fd.append('longitude', meta?.longitude || '')
-      // ✅ AI Result se heavy base64 image strip karo backend bhejney se pehle
-      // ✅ AI Result se image nikal kar alag variable mein save karo
+      fd.append('latitude', meta?.latitude || manualGps?.lat || '')
+      fd.append('longitude', meta?.longitude || manualGps?.lng || '')
+      
+      // AI result: remove heavy base64 before sending to flask
       const aiResultToSave = { ...aiResult }
-      const annotatedBase64 = aiResultToSave.annotated_image_base64 
-      delete aiResultToSave.annotated_image_base64 // JSON ko halka rakho
-      
+      const annotatedBase64 = aiResultToSave.annotated_image_base64
+      delete aiResultToSave.annotated_image_base64
       fd.append('yoloResults', JSON.stringify(aiResultToSave))
-      
-      // ✅ Image ko alag form-field ki tarah bhejo!
       if (annotatedBase64) {
         fd.append('annotatedImageBase64', annotatedBase64)
       }
-      
-      fd.append('yoloResults', JSON.stringify(aiResultToSave))
       fd.append('agencyEmail', finalAgencyEmail)
       if (meta?.streetAddr) fd.append('streetAddress', meta.streetAddr)
       if (meta?.landmark) fd.append('landmark', meta.landmark)
@@ -305,9 +352,25 @@ const runAI = async () => {
         {step === 0 && (
           <div className="animate-fade-up">
             <h2 className="heading mb-2" style={{ fontSize: '1.5rem' }}>Upload Waste Photo</h2>
-            <p style={{ color: 'var(--text-2)', fontSize: '14px', marginBottom: '24px' }}>
-              GPS and pincode will be extracted automatically from image EXIF metadata (if available). Otherwise, you can enter manually.
-            </p>
+            
+            {/* GPS Toggle Button */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={enableLocation}
+                disabled={locationEnabled}
+                className="btn btn-outline"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Locate size={16} />
+                {locationEnabled ? '✅ Location Enabled' : '📍 Enable GPS for Image'}
+              </button>
+              {manualGps && (
+                <p className="mt-2 text-xs" style={{ color: 'var(--text-3)' }}>
+                  Captured: {manualGps.lat.toFixed(6)}, {manualGps.lng.toFixed(6)} (accuracy ±{manualGps.accuracy}m)
+                </p>
+              )}
+            </div>
 
             <div className={`dropzone ${dragOver ? 'over' : ''}`}
               onDrop={handleDrop}
@@ -346,7 +409,6 @@ const runAI = async () => {
                   <span className="section-title" style={{ fontSize: '13px' }}>Location Information</span>
                 </div>
 
-                {/* Auto-extracted GPS data if available */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   {[
                     ['Latitude', meta.latitude ?? 'Not found'],
@@ -365,14 +427,11 @@ const runAI = async () => {
                   ))}
                 </div>
 
-                {/* Manual entry section (always visible for manual override) */}
                 <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
                   <p style={{ color: 'var(--text-2)', fontSize: '13px', marginBottom: '12px', fontWeight: 500 }}>
                     📍 Enter Location Details Manually:
                   </p>
-
                   <div className="space-y-3">
-                    {/* Pincode Input with Agency Fetch */}
                     <div>
                       <label className="label" style={{ fontSize: '12px', marginBottom: '4px' }}>
                         Pincode <span style={{ color: '#ef4444' }}>*</span>
@@ -405,7 +464,6 @@ const runAI = async () => {
                       </div>
                     </div>
 
-                    {/* Show Fetched Agency Details */}
                     {meta.agencyEmail && meta.agencyEmail !== 'defaultagency@municipal.gov.in' && (
                       <div className="p-3 rounded-lg" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)' }}>
                         <div className="flex items-center gap-2">
@@ -420,7 +478,6 @@ const runAI = async () => {
                       </div>
                     )}
 
-                    {/* Show Warning if Default Agency */}
                     {meta.agencyEmail === 'defaultagency@municipal.gov.in' && meta.manualPincode?.length === 6 && (
                       <div className="p-3 rounded-lg flex items-start gap-2"
                         style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
@@ -431,7 +488,6 @@ const runAI = async () => {
                       </div>
                     )}
 
-                    {/* Street Address Input */}
                     <div>
                       <label className="label" style={{ fontSize: '12px', marginBottom: '4px' }}>
                         Street Address
@@ -445,7 +501,6 @@ const runAI = async () => {
                       />
                     </div>
 
-                    {/* Landmark Input */}
                     <div>
                       <label className="label" style={{ fontSize: '12px', marginBottom: '4px' }}>
                         Landmark
@@ -484,7 +539,6 @@ const runAI = async () => {
               Review the waste analysis before submitting your complaint.
             </p>
 
-            {/* Primary result card */}
             <div className="card card-glow p-6 mb-4">
               <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
                 <div>
@@ -500,7 +554,7 @@ const runAI = async () => {
                   </span>
                 </div>
               </div>
-              // Inside the AI results card (step === 1), after showing wasteType, add:
+              
               {aiResult.annotated_image_base64 && (
                 <div className="mt-4">
                   <div className="label mb-2">Detection Map (Bounding Boxes)</div>
@@ -526,7 +580,6 @@ const runAI = async () => {
                 ))}
               </div>
 
-              {/* Expandable sections */}
               {[
                 ['environmentalImpact', '🌍 Environmental Impact', aiResult.environmentalImpact],
                 ['recycleBenefit', '♻️ Recycling Benefit', aiResult.recycleBenefit],
@@ -548,7 +601,6 @@ const runAI = async () => {
               )}
             </div>
 
-            {/* Plastic Items Detailed List */}
             {aiResult.plastics && aiResult.plastics.length > 0 && (
               <div className="mt-4">
                 <h4 className="section-title mb-2" style={{ fontSize: '13px' }}>♻️ Plastics Identified</h4>
@@ -580,7 +632,6 @@ const runAI = async () => {
             <h2 className="heading mb-2" style={{ fontSize: '1.5rem' }}>Register Complaint</h2>
             <p style={{ color: 'var(--text-2)', fontSize: '14px', marginBottom: '24px' }}>Add a description and confirm submission.</p>
 
-            {/* Summary */}
             <div className="card p-5 mb-5">
               <div className="flex gap-4 flex-wrap">
                 {preview && <img src={preview} alt="waste" style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />}

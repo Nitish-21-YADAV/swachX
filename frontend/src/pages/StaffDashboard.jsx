@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { RefreshCw, Upload, CheckCircle, X, Camera } from 'lucide-react'
+import { RefreshCw, Upload, CheckCircle, X, Camera, Locate } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../utils/api'
 import Navbar from '../components/layout/Navbar'
@@ -15,10 +15,34 @@ function VerifyModal({ complaint, onClose, onDone }) {
   const [result, setResult] = useState(null)
   const fileRef = useRef()
 
+  // GPS state
+  const [manualGps, setManualGps] = useState(null)
+  const [locationEnabled, setLocationEnabled] = useState(false)
+
   const handleFile = f => {
     if (!f) return
     setFile(f)
     setPreview(URL.createObjectURL(f))
+  }
+
+  const enableLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation not supported')
+      return
+    }
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
+      })
+      setManualGps({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      })
+      setLocationEnabled(true)
+      toast.success('Location captured')
+    } catch (err) {
+      toast.error('Unable to get location')
+    }
   }
 
   const submit = async () => {
@@ -28,9 +52,13 @@ function VerifyModal({ complaint, onClose, onDone }) {
       const fd = new FormData()
       fd.append('file', file)
       fd.append('remark', remark)
+      if (manualGps) {
+        fd.append('latitude', manualGps.lat)
+        fd.append('longitude', manualGps.lng)
+      }
       const { data } = await api.post(`/staff/complaints/${complaint._id}/verify`, fd)
       setResult(data)
-      toast.success(`SSIM verification complete — ${data.status}`)
+      toast.success(`Verification complete — ${data.status}`)
       onDone()
     } catch (e) { toast.error(errMsg(e)) }
     finally { setLoading(false) }
@@ -44,7 +72,7 @@ function VerifyModal({ complaint, onClose, onDone }) {
       <div className="card card-glow" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--border)' }}>
           <div>
-            <h3 className="heading" style={{ fontSize: '1.1rem' }}>SSIM Verification</h3>
+            <h3 className="heading" style={{ fontSize: '1.1rem' }}>Verification</h3>
             <p style={{ color: 'var(--text-3)', fontSize: '12px', fontFamily: 'JetBrains Mono,monospace' }}>
               {complaint.complaintNumber}
             </p>
@@ -57,6 +85,25 @@ function VerifyModal({ complaint, onClose, onDone }) {
         <div className="p-5">
           {!result ? (
             <>
+              {/* GPS Toggle Button */}
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={enableLocation}
+                  disabled={locationEnabled}
+                  className="btn btn-outline"
+                  style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Locate size={14} />
+                  {locationEnabled ? 'GPS Enabled' : 'Enable GPS for this photo'}
+                </button>
+                {manualGps && (
+                  <span className="ml-2 text-xs" style={{ color: 'var(--text-3)' }}>
+                    📍 GPS ready
+                  </span>
+                )}
+              </div>
+
               {/* Before/After side by side */}
               <div className="grid grid-cols-2 gap-4 mb-5">
                 <div>
@@ -91,10 +138,10 @@ function VerifyModal({ complaint, onClose, onDone }) {
                   placeholder="Notes about the cleanup…" />
               </div>
 
-              {/* Info about SSIM */}
+              {/* Info about verification */}
               <div className="p-3 rounded-xl mb-4"
                 style={{ background: 'rgba(200,241,53,0.04)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-3)' }}>
-                SSIM &lt; 0.80 → Cleaned &nbsp;|&nbsp; 0.62–0.80 → Pending Review &nbsp;|&nbsp; &gt;0.80 → Rejected
+                AI similarity → Cleaned (&lt;0.55), Pending (0.55‑0.75), Rejected (&gt;0.75)
               </div>
 
               <div className="flex gap-3">
@@ -102,7 +149,7 @@ function VerifyModal({ complaint, onClose, onDone }) {
                 <button className="btn btn-primary" onClick={submit} disabled={loading || !file}
                   style={{ flex: 2, justifyContent: 'center' }}>
                   {loading
-                    ? <><div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#050D05' }} /> Running SSIM…</>
+                    ? <><div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#050D05' }} /> Running AI…</>
                     : <><Upload size={15} /> Verify Cleanup</>
                   }
                 </button>
@@ -122,12 +169,12 @@ function VerifyModal({ complaint, onClose, onDone }) {
               <StatusBadge status={result.status} />
 
               <div className="p-4 rounded-xl my-4" style={{ background: 'rgba(200,241,53,0.05)', border: '1px solid var(--border)' }}>
-                <div className="label mb-2">SSIM Score</div>
+                <div className="label mb-2">Comparison Score</div>
                 <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '2rem', color: 'var(--acid)', fontWeight: 700 }}>
-                  {fmtScore(result.ssimScore)}
+                  {fmtScore(result.similarityScore || result.ssimScore)}
                 </div>
                 <div style={{ color: 'var(--text-3)', fontSize: '11px', marginTop: '4px' }}>
-                  {result.isCleaned ? 'Area significantly changed — marked as Cleaned' : 'Insufficient change detected'}
+                  {result.message || (result.isCleaned ? 'Area significantly changed — marked as Cleaned' : 'Insufficient change detected')}
                 </div>
               </div>
               <button className="btn btn-primary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>
@@ -258,7 +305,7 @@ export default function StaffDashboard() {
                           background: 'rgba(200,241,53,0.08)', color: 'var(--acid)',
                           padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(200,241,53,0.2)'
                         }}>
-                          SSIM {fmtScore(c.ssimScore)}
+                          Score {fmtScore(c.ssimScore)}
                         </span>
                       )}
                     </div>

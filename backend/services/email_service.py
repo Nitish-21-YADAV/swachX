@@ -89,3 +89,47 @@ def send_staff_assignment_notification(staff_email, complaint_number, user_name,
     except Exception as e:
         print(f"[Email] Staff email failed: {e}")
         return False
+
+
+def send_staff_warning_email(staff_email: str, complaint_id: str, hours_pending: float, reason: str):
+    """Send warning email to staff for delayed complaint"""
+    subject = f"⚠️ Action Required: Complaint {complaint_id} Delayed"
+    body = f"""
+    Dear Staff,
+
+    Complaint {complaint_id} is pending for {hours_pending:.1f} hours.
+    Reason: {reason}
+    Please take immediate action to avoid escalation.
+
+    Regards,
+    SwachX System
+    """
+    try:
+        msg = Message(subject=subject, recipients=[staff_email], body=body)
+        mail.send(msg)
+        print(f"[Email] Warning sent to {staff_email}")
+        return True
+    except Exception as e:
+        print(f"[Email] Warning failed: {e}")
+        return False
+
+def send_admin_escalation_email(admin_email: str, complaint_id: str, reason: str):
+    """Notify admin about escalated complaint"""
+    subject = f"🚨 Escalated: Complaint {complaint_id} Needs Attention"
+    body = f"""
+    Dear Admin,
+
+    Complaint {complaint_id} has been escalated due to: {reason}
+    Please review and take necessary action.
+
+    Regards,
+    SwachX System
+    """
+    try:
+        msg = Message(subject=subject, recipients=[admin_email], body=body)
+        mail.send(msg)
+        print(f"[Email] Escalation notification sent to {admin_email}")
+        return True
+    except Exception as e:
+        print(f"[Email] Escalation email failed: {e}")
+        return False

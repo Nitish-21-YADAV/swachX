@@ -34,9 +34,11 @@ def verification_db(): return get_client()["verificationDB"]
 # ── Collection shortcuts ──────────────────────────────────────────────
 def users_col():         return auth_db()["users"]
 def complaints_col():    return complaint_db()["complaints"]
-def agency_col():        return agency_db()["DataAgency"]   # exact collection name as specified
+def agency_col():        return agency_db()["DataAgency"]
 def verify_col():        return verification_db()["verifications"]
 def reports_col():       return verification_db()["reports"]
+def recommendations_col():
+    return verification_db()["recommendations"]   # ✅ Fixed: use verification_db() as a database
 
 # ── Index setup ───────────────────────────────────────────────────────
 def setup_indexes():
