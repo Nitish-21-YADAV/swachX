@@ -40,11 +40,13 @@ SwachX/
 └── README.md
 
 
-Agents inside SwachX
-- Twin‑Vision Agent (verification)
-- Monitoring & Escalation Agent
-- Predictive Analytics Agent
+## Agents inside SwachX
 
-Reports
-- Admins can export last 10 or last 30 complaints as Excel or PDF.
-- Reports include complaint number, user, waste type, agency, status, energy saved, CO₂ offset
+- **Twin‑Vision Agent (verification)** – Compares before/after images...
+- **Monitoring & Escalation Agent** – Scans stale pending complaints...
+- **Predictive Analytics Agent** – Analyses complaint trends...
+
+## Reports
+
+- Export last 10 or 30 complaints as Excel/PDF.
+- Includes complaint number, user, waste type, agency, status, energy saved, CO₂ offset.
