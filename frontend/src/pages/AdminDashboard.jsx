@@ -346,7 +346,7 @@ export default function AdminDashboard() {
               <table className="table">
                 <thead>
                   <tr>
-                    {['Images', 'Complaint No.', 'User', 'Waste Type', 'Agency', 'Pincode', 'Status', 'Timestamp', 'Energy', 'SSIM', 'Actions'].map(h => (
+                    {['Images', 'Complaint No.', 'User', 'Waste Type', 'Agency', 'Pincode', 'Status', 'Timestamp', 'Energy', 'Vefiry', 'Actions'].map(h => (
                       <th key={h}>{h}</th>
                     ))}
                   </tr>

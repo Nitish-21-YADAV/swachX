@@ -184,7 +184,7 @@ export default function UserDashboard() {
                       </div>
                       {c.ssimScore != null && (
                         <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(200,241,53,0.05)', border: '1px solid var(--border)' }}>
-                          <div className="label mb-2">SSIM Verification Score</div>
+                          <div className="label mb-2"> Verification Agent</div>
                           <div className="flex items-center gap-3">
                             <div className="ssim-bar-track" style={{ flex: 1 }}>
                               <div className="ssim-bar-fill"

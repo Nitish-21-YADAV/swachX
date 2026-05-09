@@ -8,7 +8,7 @@ const FEATURES = [
   { icon: TrendingUp, title: 'Predictive Agent',     desc: 'Weekly analysis of complaint trends; suggests bin deployment & resource allocation reports.' },
   { icon: MapPin,     title: 'GPS & Manual Location',desc: 'Captures user/staff coordinates (EXIF or manual) to ensure same‑spot verification.' },
   { icon: Shield,     title: 'Fraud Detection',      desc: 'Agent checks location consistency & framing; rejects deceptive after‑images automatically.' },
-  { icon: BarChart3,  title: 'Live Dashboards',      desc: 'Role‑specific dashboards for citizens, staff, admins with real‑time updates & AI recommendations.' },
+  { icon: BarChart3,  title: 'Live Dashbaord',      desc: 'Role‑specific dashboards for citizens, staff, admins with real‑time updates & AI recommendations.' },
 ]
 
 const STEPS = [
