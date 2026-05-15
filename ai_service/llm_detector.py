@@ -20,7 +20,7 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# ✅ SwachX Production Model Fallbacks
+# [OK] SwachX Production Model Fallbacks
 MODEL_FALLBACKS = [
     "gemini-2.5-flash",       # Primary: Best for image + bounding boxes
     "gemini-2.0-flash",       # Fallback 1: Stable if 2.5 is on heavy load (503)
@@ -123,7 +123,7 @@ def draw_boxes(image: Image.Image, detections: list) -> Image.Image:
         if not box or len(box) != 4: continue
 
         try:
-            # ✅ FIX: Safe casting & sorting to prevent PIL crash
+            # [OK] FIX: Safe casting & sorting to prevent PIL crash
             ymin, xmin, ymax, xmax = float(box[0]), float(box[1]), float(box[2]), float(box[3])
             if not all(0 <= v <= 1000 for v in [ymin, xmin, ymax, xmax]): continue
 
@@ -163,12 +163,12 @@ def call_gemini(img_bytes: bytes, retries_per_model: int = 3) -> str:
                     ],
                     config=types.GenerateContentConfig(
                         temperature=0.0,
-                        response_mime_type="application/json", # ✅ STRICT JSON 
+                        response_mime_type="application/json", # [OK] STRICT JSON 
                     ),
                 )
                 if not response.candidates:
                     raise ValueError(f"Empty response from {model_name}")
-                print(f"[llm_detector] ✅ Success — model: {model_name}")
+                print(f"[llm_detector] Success - model: {model_name}")
                 return response.text
                 
             except ServerError as e:
@@ -193,7 +193,7 @@ def call_gemini(img_bytes: bytes, retries_per_model: int = 3) -> str:
 # ──────────────────────────────────────────────
 def analyze_waste_image(image_bytes: bytes) -> dict:
     try:
-        # ✅ STEP 1: Load and Auto-Resize to 1024px to save payload/tokens
+        # [OK] STEP 1: Load and Auto-Resize to 1024px to save payload/tokens
         original_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         max_size = 1024
         if max(original_image.size) > max_size:
@@ -203,26 +203,26 @@ def analyze_waste_image(image_bytes: bytes) -> dict:
         img_buffer = io.BytesIO()
         original_image.save(img_buffer, format="JPEG", quality=90)
         
-        # ✅ STEP 2: Call Gemini API            
+        # [OK] STEP 2: Call Gemini API            
         raw_text = call_gemini(img_buffer.getvalue())
         result = extract_and_fix_json(raw_text)
 
-        # ✅ STEP 3: Safe Defaults
+        # [OK] STEP 3: Safe Defaults
         result.setdefault("wasteType", "Mixed Waste")
         result.setdefault("environmentalImpact", "Waste causes environmental damage.")
         result.setdefault("totalWeightKg", 0.0)
         
-        # ✅ STEP 4: Force maximum 15 objects (Prevents UI Freeze)
+        # [OK] STEP 4: Force maximum 15 objects (Prevents UI Freeze)
         detections = result.get("detections", [])
         detections = detections[:40] 
         result["detections"] = detections          
         result["totalItems"] = len(detections)
         print(f"[llm_detector] Safely rendering {len(detections)} objects.")   
   
-        # ✅ STEP 5: Draw boxes locally (Zero API tokens)
+        # [OK] STEP 5: Draw boxes locally (Zero API tokens)
         annotated = draw_boxes(original_image.copy(), detections)
 
-        # ✅ STEP 6: Save as lightweight JPEG base64 (Fixes 5MB String bloat)
+        # [OK] STEP 6: Save as lightweight JPEG base64 (Fixes 5MB String bloat)
         out_buf = io.BytesIO()
         annotated.save(out_buf, format="JPEG", quality=85) 
         result["annotated_image_base64"] = base64.b64encode(out_buf.getvalue()).decode("utf-8")

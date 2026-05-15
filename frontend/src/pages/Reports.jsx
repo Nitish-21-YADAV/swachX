@@ -37,7 +37,7 @@ export default function ReportsPage() {
       const a = document.createElement('a')
       a.href = url
       a.download = res.headers['content-disposition']?.split('filename=')[1]?.replace(/"/g, '')
-        || `WasteGuard_Report.${fmt === 'excel' ? 'xlsx' : 'pdf'}`
+        || `SwachX_Report.${fmt === 'excel' ? 'xlsx' : 'pdf'}`
       a.click()
       URL.revokeObjectURL(url)
       toast.success(`${fmt.toUpperCase()} downloaded!`)
@@ -140,10 +140,10 @@ export default function ReportsPage() {
                       <div style={{ fontWeight: 500, color: 'var(--text-1)' }}>{c.userName}</div>
                       <div style={{ color: 'var(--text-3)', fontSize: '10px' }}>{c.userEmail}</div>
                     </td>
-                    <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '150px', wordBreak: 'break-word' }}>
+                    <td style={{ fontSize: '12px', color: 'var(--text-2)' }}>
                       {(c.wasteType || '').split('—')[0]}
                     </td>
-                    <td style={{ fontSize: '11px', color: 'var(--text-3)', maxWidth: '250px', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                    <td style={{ fontSize: '11px', color: 'var(--text-3)', lineHeight: 1.4 }}>
                       {c.environmentalImpact ? (c.environmentalImpact.length > 100 ? c.environmentalImpact.slice(0, 100) + '…' : c.environmentalImpact) : '—'}
                     </td>
                     <td style={{ fontSize: '11px', color: 'var(--text-2)' }}>{c.agencyEmail}</td>

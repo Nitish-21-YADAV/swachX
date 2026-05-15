@@ -55,7 +55,7 @@ def export_excel():
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "WasteGuard Report"
+    ws.title = "SwachX Report"
 
     # Styling
     header_fill  = PatternFill("solid", fgColor="1A3C1A")    
@@ -72,7 +72,7 @@ def export_excel():
     # Title row
     ws.merge_cells("A1:J1")
     title_cell = ws["A1"]
-    title_cell.value     = f"WasteGuard — Complaint Report ({range_type.upper()})"
+    title_cell.value     = f"SwachX — Complaint Report ({range_type.upper()})"
     title_cell.font      = Font(bold=True, color="A3E635", size=14)
     title_cell.fill      = PatternFill("solid", fgColor="0A0F0A")
     title_cell.alignment = center
@@ -130,7 +130,7 @@ def export_excel():
     output = io.BytesIO()
     wb.save(output); output.seek(0)
 
-    fname = f"WasteGuard_Report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M')}.xlsx"
+    fname = f"SwachX_Report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M')}.xlsx"
     return send_file(output, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                      as_attachment=True, download_name=fname)
 
@@ -171,7 +171,7 @@ def export_pdf():
     wrap_style   = ParagraphStyle("wrap",   fontSize=7.5, textColor=TEXT,  fontName="Helvetica")
 
     story = [
-        Paragraph("♻ WasteGuard — Complaint Report", title_style),
+        Paragraph("♻ SwachX — Complaint Report", title_style),
         Paragraph(f"Range: {range_type.upper()} | Generated: {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')} | Total: {len(docs)}", sub_style),
         Spacer(1, 0.3*cm)
     ]
@@ -227,6 +227,6 @@ def export_pdf():
     doc.build(story)   
     output.seek(0)
 
-    fname = f"WasteGuard_Report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M')}.pdf"
+    fname = f"SwachX_Report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M')}.pdf"
     return send_file(output, mimetype="application/pdf",
                      as_attachment=True, download_name=fname)

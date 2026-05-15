@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { RefreshCw, Upload, CheckCircle, X, Camera, Locate } from 'lucide-react'
+import { RefreshCw, Upload, CheckCircle, XCircle, X, Camera, Locate } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../utils/api'
 import Navbar from '../components/layout/Navbar'
@@ -105,7 +105,7 @@ function VerifyModal({ complaint, onClose, onDone }) {
               </div>
 
               {/* Before/After side by side */}
-              <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                 <div>
                   <div className="label mb-2">Before Image</div>
                   {complaint.imageURL
@@ -160,10 +160,14 @@ function VerifyModal({ complaint, onClose, onDone }) {
             <div className="text-center">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                 style={{
-                  background: result.status === 'Cleaned' ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)',
-                  border: `1px solid ${result.status === 'Cleaned' ? 'rgba(74,222,128,0.3)' : 'rgba(251,191,36,0.3)'}`
+                  background: result.status === 'Cleaned' ? 'rgba(74,222,128,0.12)' : (result.status === 'Rejected' ? 'rgba(248,113,113,0.12)' : 'rgba(251,191,36,0.12)'),
+                  border: `1px solid ${result.status === 'Cleaned' ? 'rgba(74,222,128,0.3)' : (result.status === 'Rejected' ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)')}`
                 }}>
-                <CheckCircle size={28} style={{ color: result.status === 'Cleaned' ? 'var(--cleaned)' : 'var(--pending)' }} />
+                {result.status === 'Rejected' ? (
+                  <XCircle size={28} style={{ color: 'var(--rejected)' }} />
+                ) : (
+                  <CheckCircle size={28} style={{ color: result.status === 'Cleaned' ? 'var(--cleaned)' : 'var(--pending)' }} />
+                )}
               </div>
               <h4 className="heading mb-2" style={{ fontSize: '1.3rem' }}>Verification Complete</h4>
               <StatusBadge status={result.status} />
@@ -323,7 +327,7 @@ export default function StaffDashboard() {
                     )}
                   </div>
                   {c.status === 'Pending' && (
-                    <button className="btn btn-primary" onClick={() => setVerifying(c)}
+                    <button className="btn btn-primary w-full md:w-auto mt-2 md:mt-0 justify-center" onClick={() => setVerifying(c)}
                       style={{ flexShrink: 0 }}>
                       <Camera size={14} /> Verify Cleanup
                     </button>

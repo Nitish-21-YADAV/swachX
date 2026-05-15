@@ -10,7 +10,7 @@ load_dotenv()
 
 auth_bp     = Blueprint("auth", __name__)
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ADMIN22@gmail.com").lower()
-ADMIN_PASS  = os.getenv("ADMIN_PASSWORD", "Admin@1234")
+ADMIN_PASS  = os.getenv("ADMIN_PASSWORD", "Admin@2003")
 
 def _hash(pw):        return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
 def _verify(pw, h):   return bcrypt.checkpw(pw.encode(), h.encode())
@@ -144,6 +144,56 @@ def create_staff():
         "createdAt": datetime.datetime.utcnow()
     })
     return jsonify({"message": f"Staff '{name}' created with pincode range {pincode_start}-{pincode_end}"}), 201
+
+@auth_bp.route("/staff/update/<staff_id>", methods=["PATCH"])
+@jwt_required()
+def update_staff(staff_id):
+    if get_jwt().get("role") != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    
+    try:
+        obj_id = ObjectId(staff_id)
+    except:
+        return jsonify({"error": "Invalid staff ID"}), 400
+
+    staff = users_col().find_one({"_id": obj_id, "role": "staff"})
+    if not staff:
+        return jsonify({"error": "Staff not found"}), 404
+
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    pincode_start = data.get("pincodeStart", "").strip()
+    pincode_end = data.get("pincodeEnd", "").strip()
+    agency_email = data.get("agencyEmail", "").strip()
+
+    if not all([name, email, pincode_start, pincode_end]):
+        return jsonify({"error": "Name, email, and pincodes are required"}), 400
+
+    if not pincode_start.isdigit() or not pincode_end.isdigit():
+        return jsonify({"error": "Pincodes must be numeric"}), 400
+    if int(pincode_start) > int(pincode_end):
+        return jsonify({"error": "Start pincode cannot be greater than end pincode"}), 400
+
+    existing_user = users_col().find_one({"email": email})
+    if existing_user and str(existing_user["_id"]) != staff_id:
+        return jsonify({"error": "Email already in use"}), 409
+
+    update_fields = {
+        "name": name,
+        "email": email,
+        "agencyEmail": agency_email,
+        "assignedPincodeStart": pincode_start,
+        "assignedPincodeEnd": pincode_end,
+        "updatedAt": datetime.datetime.utcnow()
+    }
+
+    if password:
+        update_fields["password"] = _hash(password)
+
+    users_col().update_one({"_id": obj_id}, {"$set": update_fields})
+    return jsonify({"message": f"Staff '{name}' updated successfully"}), 200
 
 # backend/routes/auth.py
    

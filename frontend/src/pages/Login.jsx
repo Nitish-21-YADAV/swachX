@@ -49,7 +49,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold"
                  style={{ background:'var(--acid)', color:'var(--bg-base)' }}>♻</div>
-            <span className="heading text-2xl" style={{color:'var(--text-1)'}}>Waste<span style={{color:'var(--acid)'}}>Guard</span></span>
+            <span className="heading text-2xl" style={{color:'var(--text-1)'}}>Swach<span style={{color:'var(--acid)'}}>X</span></span>
           </div>
           <p style={{ color:'var(--text-2)', fontSize:'14px' }}>Sign in to your account</p>
         </div>

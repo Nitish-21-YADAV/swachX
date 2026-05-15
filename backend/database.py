@@ -20,9 +20,9 @@ def get_client():
         _client = MongoClient(uri, serverSelectionTimeoutMS=8000)
         try:
             _client.admin.command("ping")
-            print("[DB] ✅ MongoDB connected")
+            print("[DB] MongoDB connected")
         except Exception as e:
-            print(f"[DB] ⚠️  Connection warning: {e}")
+            print(f"[DB] Connection warning: {e}")
     return _client
 
 # ── Database getters ──────────────────────────────────────────────────
@@ -51,7 +51,7 @@ def setup_indexes():
         complaints_col().create_index([("timestamp", DESCENDING)])
         agency_col().create_index([("pincode", ASCENDING)], unique=True)
         verify_col().create_index([("complaintId", ASCENDING)])
-        print("[DB] ✅ Indexes ready")
+        print("[DB] Indexes ready")
     except Exception as e:
         print(f"[DB] Index note: {e}")
 

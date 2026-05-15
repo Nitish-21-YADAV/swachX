@@ -10,7 +10,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from flask_mail import Mail
 
-load_dotenv()
+load_dotenv(override=True)
 mail = Mail()
 
 def create_app():
@@ -73,10 +73,10 @@ def create_app():
         with app_instance.app_context():
             run_predictive_agent()
 
-    # Escalation agent: every 12 hours (test with minutes=5)
-    scheduler.add_job(func=run_escalation_with_context, trigger="interval", hours=12)
-    # Predictive agent: every Sunday at 23:00
-    scheduler.add_job(func=run_predictive_with_context, trigger="cron", day_of_week='sun', hour=23)
+    # Escalation agent: every 2 minutes for testing
+    scheduler.add_job(func=run_escalation_with_context, trigger="interval", minutes=2)
+    # Predictive agent: every 3 minutes for testing
+    scheduler.add_job(func=run_predictive_with_context, trigger="interval", minutes=3)
 
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, X, CheckCircle, XCircle, Users, FileText, Eye, TrendingUp, MapPin, AlertTriangle } from 'lucide-react'
+import { RefreshCw, X, CheckCircle, XCircle, Users, FileText, Eye, TrendingUp, MapPin, AlertTriangle, Edit2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../utils/api'
 import Navbar from '../components/layout/Navbar'
@@ -29,21 +29,21 @@ function ImageModal({ url, annotatedUrl, onClose }) {
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
     }} onClick={onClose}>
-      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', gap: '20px' }} onClick={e => e.stopPropagation()}>
+      <div className="flex flex-col md:flex-row overflow-y-auto" style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', gap: '20px', padding: '10px' }} onClick={e => e.stopPropagation()}>
         <button onClick={onClose} style={{
-          position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none',
-          cursor: 'pointer', color: 'white'
+          position: 'absolute', top: '0px', right: '0px', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', border: 'none',
+          cursor: 'pointer', color: 'white', padding: '4px', zIndex: 10
         }}><X size={24} /></button>
         
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="label" style={{ color: 'white', marginBottom: '8px' }}>Original Image</div>
-          <img src={url} alt="Original" style={{ maxWidth: '45vw', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
+          <img src={url} alt="Original" style={{ width: '100%', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
         </div>
         
         {annotatedUrl && (
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div className="label" style={{ color: 'white', marginBottom: '8px' }}>Detection Mapped Image</div>
-            <img src={annotatedUrl} alt="Annotated" style={{ maxWidth: '45vw', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
+            <img src={annotatedUrl} alt="Annotated" style={{ width: '100%', maxHeight: '80vh', borderRadius: '12px', objectFit: 'contain' }} />
           </div>
         )}
       </div>
@@ -201,6 +201,90 @@ function AnalysisModal({ onClose, recommendations }) {
   );
 }
 
+function EditStaffModal({ staff, onClose, onUpdate }) {
+  const [formData, setFormData] = useState({
+    name: staff.name || '',
+    email: staff.email || '',
+    password: '',
+    pincodeStart: staff.assignedPincodeStart || '',
+    pincodeEnd: staff.assignedPincodeEnd || '',
+    agencyEmail: staff.agencyEmail || ''
+  })
+  const [loading, setLoading] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await api.patch(`/auth/staff/update/${staff._id}`, formData)
+      toast.success(`Staff ${formData.name} updated`)
+      onUpdate()
+      onClose()
+    } catch (err) { toast.error(errMsg(err)) }
+    finally { setLoading(false) }
+  }
+
+  if (!staff) return null
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+    }}>
+      <div className="card card-glow p-6" style={{ width: '100%', maxWidth: '500px' }}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="heading" style={{ fontSize: '1.2rem' }}>Edit Staff Account</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="mb-4">
+            <label className="label">Full Name</label>
+            <input className="input" type="text" value={formData.name} required
+              onChange={e => setFormData({ ...formData, name: e.target.value })} />
+          </div>
+          <div className="mb-4">
+            <label className="label">Email</label>
+            <input className="input" type="email" value={formData.email} required
+              onChange={e => setFormData({ ...formData, email: e.target.value })} />
+          </div>
+          <div className="mb-4">
+            <label className="label">Password <span style={{color: 'var(--text-3)', fontSize: '11px', textTransform: 'none'}}>(Leave blank to keep current)</span></label>
+            <input className="input" type="password" value={formData.password}
+              onChange={e => setFormData({ ...formData, password: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="label">Pincode Start</label>
+              <input className="input" type="text"
+                value={formData.pincodeStart}
+                onChange={e => setFormData({ ...formData, pincodeStart: e.target.value })} required />
+            </div>
+            <div>
+              <label className="label">Pincode End</label>
+              <input className="input" type="text"
+                value={formData.pincodeEnd}
+                onChange={e => setFormData({ ...formData, pincodeEnd: e.target.value })} required />
+            </div>
+          </div>
+          <div className="mb-5">
+            <label className="label">Agency Email</label>
+            <input className="input" type="email"
+              value={formData.agencyEmail}
+              onChange={e => setFormData({ ...formData, agencyEmail: e.target.value })} />
+          </div>
+          <div className="flex gap-3">
+            <button type="button" className="btn btn-outline" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 2, justifyContent: 'center' }}>
+              {loading ? 'Updating…' : 'Update Staff'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const [complaints, setComplaints] = useState([])
   const [stats, setStats] = useState({})
@@ -212,6 +296,7 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState([])
   const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', pincodeStart: '', pincodeEnd: '', agencyEmail: '' })
   const [staffBusy, setStaffBusy] = useState(false)
+  const [editStaffModal, setEditStaffModal] = useState(null)
 
   // New state for analysis modal
   const [showAnalysisModal, setShowAnalysisModal] = useState(false)
@@ -278,6 +363,7 @@ export default function AdminDashboard() {
       {imgModal && <ImageModal url={imgModal.url} annotatedUrl={imgModal.annotatedUrl} onClose={() => setImgModal(null)} />}
       {statusModal && <StatusModal complaint={statusModal} onClose={() => setStatusModal(null)} onUpdate={fetchData} />}
       {showAnalysisModal && <AnalysisModal recommendations={recommendations} onClose={() => setShowAnalysisModal(false)} />}
+      {editStaffModal && <EditStaffModal staff={editStaffModal} onClose={() => setEditStaffModal(null)} onUpdate={fetchStaff} />}
 
       <div className="page-wrapper" style={{ paddingTop: '36px', paddingBottom: '60px' }}>
         {/* Header */}
@@ -359,7 +445,7 @@ export default function AdminDashboard() {
                   ) : complaints.map(c => (
                     <tr key={c._id}>
                       <td>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', minWidth: '110px' }}>
                           {c.imageURL ? (
                             <img src={c.imageURL} alt="Original" onClick={() => setImgModal({ url: c.imageURL, annotatedUrl: c.annotatedImageURL })}
                               style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover', cursor: 'zoom-in' }} title="Original Image" />
@@ -377,10 +463,10 @@ export default function AdminDashboard() {
                         <div style={{ fontWeight: 500 }}>{c.userName}</div>
                         <div style={{ color: 'var(--text-3)', fontSize: '11px' }}>{c.userEmail}</div>
                       </td>
-                      <td style={{ fontSize: '13px', maxWidth: '140px', color: 'var(--text-2)' }}>
+                      <td style={{ fontSize: '13px', color: 'var(--text-2)' }}>
                         {(c.wasteType || '').split('—')[0].slice(0, 30)}
                       </td>
-                      <td style={{ fontSize: '12px', color: 'var(--text-2)', maxWidth: '140px' }}>{c.agencyEmail}</td>
+                      <td style={{ fontSize: '12px', color: 'var(--text-2)' }}>{c.agencyEmail}</td>
                       <td style={{ fontSize: '12px', fontFamily: 'JetBrains Mono,monospace' }}>{c.pincode}</td>
                       <td><StatusBadge status={c.status} /></td>
                       <td style={{ fontSize: '12px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{formatDate(c.timestamp)}</td>
@@ -448,7 +534,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="label">Agency Email (optional)</label>
+                  <label className="label">Agency Email</label>
                   <input className="input" type="email" placeholder="agency@bmc.gov.in"
                     value={newStaff.agencyEmail || ''}
                     onChange={e => setNewStaff({ ...newStaff, agencyEmail: e.target.value })} />
@@ -486,6 +572,9 @@ export default function AdminDashboard() {
                           )}
                         </div>
                         <span className="badge" style={{ background: 'rgba(200,241,53,0.08)', color: 'var(--acid)', border: '1px solid rgba(200,241,53,0.2)', fontSize: '10px' }}>Staff</span>
+                        <button className="btn btn-outline" style={{ padding: '6px', fontSize: '12px' }} onClick={() => setEditStaffModal(s)} title="Edit Staff">
+                          <Edit2 size={14} />
+                        </button>
                       </div>
                     ))}
                   </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Cpu, MapPin, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Send, Locate } from 'lucide-react'
+import { Upload, Cpu, MapPin, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Send, Locate, Edit2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api, { aiApi } from '../utils/api'
 import Navbar from '../components/layout/Navbar'
@@ -115,6 +115,10 @@ export default function NewComplaint() {
   const fileRef = useRef()
   const nav = useNavigate()
 
+  const [isEditingPincode, setIsEditingPincode] = useState(false)
+  const [editPincodeValue, setEditPincodeValue] = useState('')
+
+
   // Manual GPS state
   const [manualGps, setManualGps] = useState(null)
   const [locationEnabled, setLocationEnabled] = useState(false)
@@ -208,14 +212,14 @@ export default function NewComplaint() {
         city: data.city,
         resolvedPincode: pincode
       }))
-      if (data.agencyEmail !== 'defaultagency@municipal.gov.in') {
+      if (data.agencyEmail !== 'ujjwalvandur03@gmail.com') {
         toast.success(`Agency found: ${data.agencyName}`)
       } else {
-        toast.error('No agency found for this pincode')
+        toast.success('Pincode valid. Routed to default agency.')
       }
     } catch (error) {
       console.error('Failed to fetch agency:', error)
-      toast.error('Could not fetch agency details')
+      toast.error(error.response?.data?.error || 'Could not fetch agency details')
     } finally {
       setFetchingAgency(false)
     }
@@ -240,7 +244,7 @@ export default function NewComplaint() {
 
     if (!finalPincode) { toast.error('Pincode is required'); return }
 
-    const finalAgencyEmail = meta?.agencyEmail || 'defaultagency@municipal.gov.in'
+    const finalAgencyEmail = meta?.agencyEmail || 'ujjwalvandur03@gmail.com'
 
     setSubmitting(true)
     try {
@@ -294,7 +298,7 @@ export default function NewComplaint() {
           {done.energyKwh !== undefined && done.energyKwh > 0 && (
             <div className="p-4 rounded-xl mb-6" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)' }}>
               <h4 className="text-sm font-bold mb-2" style={{ color: 'var(--acid)' }}>🌍 Environmental Impact</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div><span className="text-gray-400">Energy generated:</span> <strong>{done.energyKwh} kWh</strong></div>
                 <div><span className="text-gray-400">CO₂ saved:</span> <strong>{done.co2SavedKg} kg</strong></div>
                 <div><span className="text-gray-400">🏠 Households powered (monthly):</span> <strong>{done.householdsPowered}</strong></div>
@@ -464,7 +468,7 @@ export default function NewComplaint() {
                       </div>
                     </div>
 
-                    {meta.agencyEmail && meta.agencyEmail !== 'defaultagency@municipal.gov.in' && (
+                    {meta.agencyEmail && meta.agencyEmail !== 'ujjwalvandur03@gmail.com' && (
                       <div className="p-3 rounded-lg" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)' }}>
                         <div className="flex items-center gap-2">
                           <CheckCircle size={14} style={{ color: 'var(--cleaned)' }} />
@@ -478,7 +482,7 @@ export default function NewComplaint() {
                       </div>
                     )}
 
-                    {meta.agencyEmail === 'defaultagency@municipal.gov.in' && meta.manualPincode?.length === 6 && (
+                    {meta.agencyEmail === 'ujjwalvandur03@gmail.com' && meta.manualPincode?.length === 6 && (
                       <div className="p-3 rounded-lg flex items-start gap-2"
                         style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
                         <AlertTriangle size={14} style={{ color: '#F87171', marginTop: '2px' }} />
@@ -524,7 +528,7 @@ export default function NewComplaint() {
                 {aiLoading ? (
                   <><div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#050D05' }} /> Running AI Analysis…</>
                 ) : (
-                  <><Cpu size={16} /> Analyse with YOLOv11</>
+                  <><Cpu size={16} /> Analyse with AI</>
                 )}
               </button>
             )}
@@ -639,8 +643,53 @@ export default function NewComplaint() {
                   <div style={{ fontSize: '12px', color: 'var(--acid)', fontFamily: 'Syne,sans-serif', fontWeight: 700, marginBottom: '4px' }}>
                     {aiResult?.wasteType || 'Unknown Waste'}
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-2)' }}> Pincode: {meta?.resolvedPincode || meta?.pincode || 'N/A'}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-2)' }}> Agency: {meta?.agencyEmail || 'To be assigned'}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    Pincode: 
+                    {isEditingPincode ? (
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="text" 
+                          maxLength="6"
+                          className="input"
+                          style={{ padding: '4px 8px', fontSize: '13px', width: '90px', minHeight: '30px' }}
+                          value={editPincodeValue}
+                          onChange={(e) => setEditPincodeValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          autoFocus
+                        />
+                        <button 
+                          className="btn btn-primary"
+                          style={{ padding: '4px 8px', minHeight: '30px' }}
+                          onClick={() => {
+                            if (editPincodeValue.length === 6) {
+                              setMeta(prev => ({ ...prev, resolvedPincode: editPincodeValue, pincode: editPincodeValue, manualPincode: editPincodeValue }))
+                              fetchAgencyByPincode(editPincodeValue)
+                              setIsEditingPincode(false)
+                            } else {
+                              toast.error('Pincode must be 6 digits')
+                            }
+                          }}
+                        >
+                          <CheckCircle size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span style={{ color: 'var(--text-1)' }}>{meta?.resolvedPincode || meta?.pincode || 'N/A'}</span>
+                        <button onClick={() => {
+                            setEditPincodeValue(meta?.resolvedPincode || meta?.pincode || '')
+                            setIsEditingPincode(true)
+                          }}
+                          style={{ color: 'var(--text-3)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Agency: <span style={{ color: 'var(--text-1)' }}>{meta?.agencyEmail || 'To be assigned'}</span>
+                    {fetchingAgency && <div className="w-3 h-3 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--border)', borderTopColor: 'var(--acid)' }} />}
+                  </div>
                 </div>
               </div>
             </div>
@@ -662,6 +711,19 @@ export default function NewComplaint() {
                 }
               </button>
             </div>
+          </div>
+        )}
+        
+        {/* Full Page AI Loader Overlay */}
+        {aiLoading && (
+          <div className="ai-loader-overlay">
+            <div className="ai-loader-ring">
+              <div className="ai-loader-center">
+                <Cpu size={40} />
+              </div>
+            </div>
+            <div className="ai-loader-text">Analyzing Image</div>
+            <div className="ai-loader-subtext">SwachX AI is detecting waste & estimating impact...</div>
           </div>
         )}
       </div>

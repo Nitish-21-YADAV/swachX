@@ -6,7 +6,7 @@ import cloudinary, cloudinary.uploader
 import requests as rq
 from database import complaints_col, agency_col, generate_complaint_number
 from services.metadata import extract_metadata
-from dotenv import load_dotenv; load_dotenv()
+from dotenv import load_dotenv; load_dotenv(override=True)
 import base64
 from services.energy_model import energy_model
 
@@ -97,7 +97,7 @@ def _find_agency(pincode: str, lat=None, lng=None):
                         return rec.get("email", "agency@municipal.gov.in"), pc
         except Exception as e:
             print(f"[geocode] {e}")
-    return "defaultagency@municipal.gov.in", pincode or "000000"
+    return "ujjwalvandur03@gmail.com", pincode or "000000"
 
 @complaints_bp.route("/extract-meta", methods=["POST"])
 @jwt_required()
@@ -122,8 +122,20 @@ def get_agency_by_pincode():
     data = request.get_json()
     pincode = data.get('pincode', '').strip()
     
-    if not pincode or len(pincode) != 6:
+    if not pincode or len(pincode) != 6 or not pincode.isdigit():
         return jsonify({"error": "Invalid pincode"}), 400
+        
+    city_name = "Unknown"
+    # Check city via public API, but don't block if not found
+    try:
+        r = rq.get(f"http://api.zippopotam.us/in/{pincode}", timeout=5)
+        if r.status_code == 200:
+            data_zip = r.json()
+            if "places" in data_zip and len(data_zip["places"]) > 0:
+                city_name = data_zip["places"][0].get("place name", "Unknown")
+    except Exception as e:
+        print(f"Pincode API error: {e}")
+        pass # allow fallback if API is down
     
     # Agency database se fetch karo
     agency = agency_col().find_one({"pincode": pincode})
@@ -133,14 +145,14 @@ def get_agency_by_pincode():
             "pincode": pincode,
             "agencyEmail": agency.get("email"),
             "agencyName": agency.get("agency"),
-            "city": agency.get("city")
+            "city": agency.get("city", city_name)
         }), 200
     else:
         return jsonify({
             "pincode": pincode,
-            "agencyEmail": "defaultagency@municipal.gov.in",
+            "agencyEmail": "ujjwalvandur03@gmail.com",
             "agencyName": "Default Municipal Agency",
-            "city": "Unknown"
+            "city": city_name
         }), 200
 
 
@@ -264,7 +276,7 @@ def submit():
     except: lng = None
 
     # Use manual agency if provided, otherwise resolve from pincode
-    if manual_agency and manual_agency != 'defaultagency@municipal.gov.in':
+    if manual_agency and manual_agency != 'ujjwalvandur03@gmail.com':
         agency_email = manual_agency
         resolved_pin = pincode
         print(f"[Submit] Using manual agency: {agency_email}")

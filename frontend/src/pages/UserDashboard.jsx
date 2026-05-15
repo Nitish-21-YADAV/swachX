@@ -204,7 +204,7 @@ export default function UserDashboard() {
                       {c.energyKwh !== undefined && c.energyKwh > 0 && (
                         <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)' }}>
                           <div className="label mb-2">♻️ Waste-to-Energy Potential</div>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                             <div><span className="text-gray-400">Energy:</span> <span style={{ color: 'var(--acid)' }}>{c.energyKwh} kWh</span></div>
                             <div><span className="text-gray-400">CO₂ saved:</span> <span style={{ color: 'var(--cleaned)' }}>{c.co2SavedKg} kg</span></div>
                             <div><span className="text-gray-400">🏠 Households (monthly):</span> {c.householdsPowered}</div>
